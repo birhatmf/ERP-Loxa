@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { Invoice, InvoiceStatus, IInvoiceRepository, InvoiceService } from '@domains/invoice';
 import { Money, EventBus } from '@shared/types';
+import { logger } from '@shared/logger';
 
 export function createInvoiceRoutes(
   invoiceRepo: IInvoiceRepository,
@@ -34,6 +35,7 @@ export function createInvoiceRoutes(
       await eventBus.publishAll(invoice.domainEvents);
       invoice.clearEvents();
 
+      logger.info('Invoice created', { id: invoice.id, invoiceNumber: invoice.invoiceNumber, customer: invoice.customerName });
       res.status(201).json({
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
@@ -45,6 +47,7 @@ export function createInvoiceRoutes(
         dueDate: invoice.dueDate,
       });
     } catch (error: any) {
+      logger.error('Failed to create invoice', { error: error.message, body: req.body });
       res.status(400).json({ error: error.message });
     }
   });
@@ -64,6 +67,7 @@ export function createInvoiceRoutes(
         createdAt: inv.createdAt,
       })));
     } catch (error: any) {
+      logger.error('Failed to list invoices', { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -100,6 +104,7 @@ export function createInvoiceRoutes(
         createdAt: invoice.createdAt,
       });
     } catch (error: any) {
+      logger.error('Failed to get invoice', { error: error.message, id: req.params.id });
       res.status(500).json({ error: error.message });
     }
   });
@@ -115,8 +120,10 @@ export function createInvoiceRoutes(
       await eventBus.publishAll(invoice.domainEvents);
       invoice.clearEvents();
 
+      logger.info('Invoice sent', { id: invoice.id, status: invoice.status });
       res.json({ id: invoice.id, status: invoice.status });
     } catch (error: any) {
+      logger.error('Failed to send invoice', { error: error.message, id: req.params.id });
       res.status(400).json({ error: error.message });
     }
   });
@@ -132,8 +139,10 @@ export function createInvoiceRoutes(
       await eventBus.publishAll(invoice.domainEvents);
       invoice.clearEvents();
 
+      logger.info('Invoice marked as paid', { id: invoice.id, paidDate: invoice.paidDate });
       res.json({ id: invoice.id, status: invoice.status, paidDate: invoice.paidDate });
     } catch (error: any) {
+      logger.error('Failed to pay invoice', { error: error.message, id: req.params.id });
       res.status(400).json({ error: error.message });
     }
   });

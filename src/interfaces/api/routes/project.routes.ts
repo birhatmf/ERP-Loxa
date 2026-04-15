@@ -1,11 +1,11 @@
 import { Request, Response, Router } from 'express';
-import { CreateProject, AddProjectItem, UpdateProjectStatus } from '@application/use-cases/project/project.use-cases';
-import { IProjectRepository, ProjectStatus, CostCalculationService } from '@domains/project';
+import { CreateProject, AddProjectItem } from '@application/use-cases/project/project.use-cases';
+import { IProjectRepository, CostCalculationService } from '@domains/project';
+import { logger } from '@shared/logger';
 
 export function createProjectRoutes(
   createProject: CreateProject,
   addProjectItem: AddProjectItem,
-  updateProjectStatus: UpdateProjectStatus,
   costService: CostCalculationService,
   projectRepo: IProjectRepository
 ): Router {
@@ -23,6 +23,7 @@ export function createProjectRoutes(
         totalPrice,
       });
 
+      logger.info('Project created', { id: project.id, name: project.name });
       res.status(201).json({
         id: project.id,
         name: project.name,
@@ -32,6 +33,7 @@ export function createProjectRoutes(
         createdAt: project.createdAt,
       });
     } catch (error: any) {
+      logger.error('Failed to create project', { error: error.message, body: req.body });
       res.status(400).json({ error: error.message });
     }
   });
@@ -112,26 +114,6 @@ export function createProjectRoutes(
           quantity: i.quantity,
           totalPrice: i.totalPrice.amount,
         })),
-      });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-
-  // PATCH /projects/:id/status - Update project status
-  router.patch('/projects/:id/status', async (req: Request, res: Response) => {
-    try {
-      const { status } = req.body;
-
-      const project = await updateProjectStatus.execute({
-        projectId: req.params.id,
-        newStatus: status as ProjectStatus,
-      });
-
-      res.json({
-        id: project.id,
-        status: project.status,
-        endDate: project.endDate,
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });

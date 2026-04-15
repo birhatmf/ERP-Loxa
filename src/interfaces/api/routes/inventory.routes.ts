@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { CreateMaterial, AddStock } from '@application/use-cases/inventory/inventory.use-cases';
 import { IMaterialRepository, StockService, Unit } from '@domains/inventory';
+import { logger } from '@shared/logger';
 
 export function createInventoryRoutes(
   createMaterial: CreateMaterial,
@@ -21,6 +22,7 @@ export function createInventoryRoutes(
         minStockLevel,
       });
 
+      logger.info('Material created', { id: material.id, name: material.name });
       res.status(201).json({
         id: material.id,
         name: material.name,
@@ -29,6 +31,7 @@ export function createInventoryRoutes(
         minStockLevel: material.minStockLevel,
       });
     } catch (error: any) {
+      logger.error('Failed to create material', { error: error.message, body: req.body });
       res.status(400).json({ error: error.message });
     }
   });
@@ -46,6 +49,7 @@ export function createInventoryRoutes(
         isLowStock: m.isLowStock,
       })));
     } catch (error: any) {
+      logger.error('Failed to list materials', { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -62,6 +66,7 @@ export function createInventoryRoutes(
         minStockLevel: m.minStockLevel,
       })));
     } catch (error: any) {
+      logger.error('Failed to get low stock materials', { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -78,12 +83,14 @@ export function createInventoryRoutes(
       });
 
       const material = await materialRepo.findById(req.params.id);
+      logger.info('Stock added', { materialId: req.params.id, quantity });
       res.json({
         id: material!.id,
         name: material!.name,
         currentStock: material!.currentStock,
       });
     } catch (error: any) {
+      logger.error('Failed to add stock', { error: error.message, materialId: req.params.id, body: req.body });
       res.status(400).json({ error: error.message });
     }
   });
@@ -100,6 +107,7 @@ export function createInventoryRoutes(
         date: m.date,
       })));
     } catch (error: any) {
+      logger.error('Failed to get stock history', { error: error.message, materialId: req.params.id });
       res.status(500).json({ error: error.message });
     }
   });

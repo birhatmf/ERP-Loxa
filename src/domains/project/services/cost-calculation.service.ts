@@ -1,13 +1,17 @@
 import { Money, EventBus } from '@shared/types';
 import { Project } from '../entities/project.entity';
 import { ProjectCostCalculatedEvent } from '../events/project.events';
+import { AuditService } from '@shared/audit/audit.service';
 
 /**
  * CostCalculationService - Domain Service
  * Calculates project costs and margins.
  */
 export class CostCalculationService {
-  constructor(private eventBus: EventBus) {}
+  constructor(
+    private eventBus: EventBus,
+    private auditService: AuditService
+  ) {}
 
   /**
    * Calculate and emit cost breakdown for a project.
@@ -34,6 +38,20 @@ export class CostCalculationService {
     );
 
     await this.eventBus.publish(event);
+    void this.auditService.recordDomainAction({
+      action: 'project.cost.calculated',
+      message: `Project cost calculated for ${project.id}`,
+      entityType: 'project',
+      entityId: project.id,
+      userId: null,
+      metadata: {
+        projectId: project.id,
+        totalCost: totalCost.amount,
+        totalPrice: totalPrice.amount,
+        profitMargin: profitMargin.amount,
+        profitMarginPercentage,
+      },
+    });
 
     return {
       totalCost,

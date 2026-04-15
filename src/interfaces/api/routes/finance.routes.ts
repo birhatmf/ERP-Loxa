@@ -3,6 +3,7 @@ import { CreateTransaction } from '@application/use-cases/finance/create-transac
 import { TransactionType, PaymentMethod } from '@domains/finance';
 import { CashService } from '@domains/finance';
 import { ITransactionRepository } from '@domains/finance';
+import { logger } from '@shared/logger';
 
 export function createFinanceRoutes(
   createTransaction: CreateTransaction,
@@ -27,6 +28,7 @@ export function createFinanceRoutes(
         relatedProjectId,
       });
 
+      logger.info('Transaction created', { id: transaction.id, type: transaction.type, amount: transaction.amount.amount });
       res.status(201).json({
         id: transaction.id,
         amount: transaction.amount.amount,
@@ -37,6 +39,7 @@ export function createFinanceRoutes(
         createdAt: transaction.createdAt,
       });
     } catch (error: any) {
+      logger.error('Failed to create transaction', { error: error.message, body: req.body });
       res.status(400).json({ error: error.message });
     }
   });
@@ -56,6 +59,7 @@ export function createFinanceRoutes(
         createdAt: t.createdAt,
       })));
     } catch (error: any) {
+      logger.error('Failed to list transactions', { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -76,6 +80,7 @@ export function createFinanceRoutes(
         transactionCount: summary.transactionCount,
       });
     } catch (error: any) {
+      logger.error('Failed to get cash balance', { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });

@@ -10,6 +10,7 @@ if (!fs.existsSync(dataDir)) {
 
 import { EventBus } from '@shared/types';
 import { createConnection } from '@infrastructure/database/knexfile';
+import { SqliteAuditLogRepository } from '@infrastructure/database/repositories/sqlite-audit-log.repository';
 
 // Repositories
 import { SqliteTransactionRepository } from '@infrastructure/database/repositories/sqlite-transaction.repository';
@@ -18,6 +19,7 @@ import { SqliteProjectRepository } from '@infrastructure/database/repositories/s
 import { SqliteCheckRepository } from '@infrastructure/database/repositories/sqlite-check.repository';
 import { SqliteInvoiceRepository } from '@infrastructure/database/repositories/sqlite-invoice.repository';
 import { SqliteUserRepository } from '@infrastructure/database/repositories/sqlite-user.repository';
+import { SqliteRecurringTransactionRepository } from '@infrastructure/database/repositories/sqlite-recurring-transaction.repository';
 
 // Domain Services
 import { CashService } from '@domains/finance';
@@ -29,7 +31,7 @@ import { AuthService } from '@domains/auth/services/auth.service';
 
 // Use Cases
 import { CreateTransaction } from '@application/use-cases/finance/create-transaction.use-case';
-import { CreateProject, AddProjectItem, UpdateProjectStatus } from '@application/use-cases/project/project.use-cases';
+import { CreateProject, AddProjectItem } from '@application/use-cases/project/project.use-cases';
 import { CreateMaterial, AddStock } from '@application/use-cases/inventory/inventory.use-cases';
 
 // Routes
@@ -38,7 +40,10 @@ import { createProjectRoutes } from '@interfaces/api/routes/project.routes';
 import { createInventoryRoutes } from '@interfaces/api/routes/inventory.routes';
 import { createAuthRoutes } from '@interfaces/api/routes/auth.routes';
 import { createInvoiceRoutes } from '@interfaces/api/routes/invoice.routes';
+import { createRecurringRoutes } from '@interfaces/api/routes/recurring.routes';
 import { authMiddleware } from '@interfaces/api/middleware/auth.middleware';
+import { createRequestLogger } from '@interfaces/api/middleware/request-logger.middleware';
+import { AuditService } from '@shared/audit/audit.service';
 
 // Stock movement repository (inline)
 import { StockMovement, StockMovementType } from '@domains/inventory';
@@ -65,6 +70,8 @@ async function bootstrap() {
   const checkRepo = new SqliteCheckRepository(knex);
   const invoiceRepo = new SqliteInvoiceRepository(knex);
   const userRepo = new SqliteUserRepository(knex);
+  const auditRepo = new SqliteAuditLogRepository(knex);
+  const recurringRepo = new SqliteRecurringTransactionRepository(knex);
 
   // Movement repo (inline implementation)
   const movementRepo = {
@@ -84,9 +91,10 @@ async function bootstrap() {
 
   // Domain Services
   const cashService = new CashService();
+  const auditService = new AuditService(auditRepo);
   const stockService = new StockService(materialRepo, movementRepo as any, eventBus);
-  const costService = new CostCalculationService(eventBus);
-  const checkService = new CheckService(checkRepo, eventBus);
+  const costService = new CostCalculationService(eventBus, auditService);
+  const checkService = new CheckService(checkRepo, eventBus, auditService);
   const invoiceService = new InvoiceService(invoiceRepo, eventBus);
   const authService = new AuthService(userRepo);
 
@@ -94,21 +102,25 @@ async function bootstrap() {
   const createTransaction = new CreateTransaction(transactionRepo, eventBus);
   const createProject = new CreateProject(projectRepo, eventBus);
   const addProjectItem = new AddProjectItem(projectRepo, stockService, eventBus);
-  const updateProjectStatus = new UpdateProjectStatus(projectRepo, eventBus);
   const createMaterial = new CreateMaterial(materialRepo, eventBus);
   const addStock = new AddStock(stockService, eventBus);
 
   // Auth middleware
   const auth = authMiddleware(authService);
+  const requestLogger = createRequestLogger(auditService);
 
   // === ROUTES ===
+
+  // Request logging
+  app.use(requestLogger);
 
   // Auth (public)
   app.use('/api/auth', createAuthRoutes(authService));
 
   // Protected API routes
   app.use('/api/finance', auth, createFinanceRoutes(createTransaction, cashService, transactionRepo));
-  app.use('/api/project', auth, createProjectRoutes(createProject, addProjectItem, updateProjectStatus, costService, projectRepo));
+  app.use('/api/finance/recurring', createRecurringRoutes(recurringRepo, createTransaction));
+  app.use('/api/project', auth, createProjectRoutes(createProject, addProjectItem, costService, projectRepo));
   app.use('/api/inventory', auth, createInventoryRoutes(createMaterial, addStock, stockService, materialRepo));
   app.use('/api/invoices', auth, createInvoiceRoutes(invoiceRepo, invoiceService, eventBus));
 

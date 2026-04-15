@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '../services/auth.service';
-import { User } from '../entities/user.entity';
+import { AuthService } from '@domains/auth/services/auth.service';
+import { User } from '@domains/auth/entities/user.entity';
 
 // Extend Express Request to include user
 declare global {

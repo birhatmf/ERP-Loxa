@@ -3,6 +3,7 @@ import { Check } from '../entities/check.entity';
 import { CheckType, CheckStatus } from '../entities/payment.enums';
 import { ICheckRepository } from '../repositories/check.repository';
 import { CheckOverdueEvent } from '../events/payment.events';
+import { AuditService } from '@shared/audit/audit.service';
 
 /**
  * CheckService - Domain Service
@@ -11,7 +12,8 @@ import { CheckOverdueEvent } from '../events/payment.events';
 export class CheckService {
   constructor(
     private checkRepo: ICheckRepository,
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private auditService: AuditService
   ) {}
 
   /**
@@ -36,6 +38,16 @@ export class CheckService {
 
       await this.eventBus.publish(event);
     }
+
+    void this.auditService.recordDomainAction({
+      action: 'payment.checks.overdue.processed',
+      message: `Processed overdue checks: ${overdueChecks.length}`,
+      entityType: 'check',
+      metadata: {
+        count: overdueChecks.length,
+        checkIds: overdueChecks.map(check => check.id),
+      },
+    });
 
     return overdueChecks;
   }
@@ -91,7 +103,7 @@ export class CheckService {
     pendingGiven: Money;
     bouncedCount: number;
   }> {
-    const checks = await this.checkRepo.findByDateRange(from, to);
+    const checks = await this.checkRepo.findByDueDateRange(from, to);
 
     let totalReceived = Money.zero();
     let totalGiven = Money.zero();

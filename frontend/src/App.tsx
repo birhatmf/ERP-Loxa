@@ -9,6 +9,18 @@ import InventoryPage from './pages/InventoryPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import InvoicesPage from './pages/InvoicesPage';
+import SalesPage from './pages/SalesPage';
+import CustomersPage from './pages/CustomersPage';
+import ChecksPage from './pages/ChecksPage';
+import SuppliersPage from './pages/SuppliersPage';
+import StockCountPage from './pages/StockCountPage';
+import ReportsPage from './pages/ReportsPage';
+import BudgetPage from './pages/BudgetPage';
+import RecurringPage from './pages/RecurringPage';
+import CategoriesPage from './pages/CategoriesPage';
+import TaxCalculatorPage from './pages/TaxCalculatorPage';
+import LotTrackingPage from './pages/LotTrackingPage';
+import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
   return (
@@ -22,10 +34,22 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/finance" element={<FinancePage />} />
+                  <Route path="/finance/recurring" element={<RecurringPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
+                  <Route path="/inventory/stock-count" element={<StockCountPage />} />
+                  <Route path="/inventory/lot-tracking" element={<LotTrackingPage />} />
                   <Route path="/projects" element={<ProjectsPage />} />
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />
                   <Route path="/invoices" element={<InvoicesPage />} />
+                  <Route path="/sales" element={<SalesPage />} />
+                  <Route path="/customers" element={<CustomersPage />} />
+                  <Route path="/checks" element={<ChecksPage />} />
+                  <Route path="/suppliers" element={<SuppliersPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/budget" element={<BudgetPage />} />
+                  <Route path="/categories" element={<CategoriesPage />} />
+                  <Route path="/tax-calculator" element={<TaxCalculatorPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>
