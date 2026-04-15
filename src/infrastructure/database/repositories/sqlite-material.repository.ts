@@ -52,6 +52,9 @@ export class SqliteMaterialRepository implements IMaterialRepository {
       unit: row.unit as Unit,
       currentStock: parseFloat(row.current_stock),
       minStockLevel: parseFloat(row.min_stock_level),
+      manualPrice: row.manual_price !== null && row.manual_price !== undefined
+        ? parseFloat(row.manual_price)
+        : null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     });
@@ -64,6 +67,7 @@ export class SqliteMaterialRepository implements IMaterialRepository {
       unit: entity.unit,
       current_stock: entity.currentStock,
       min_stock_level: entity.minStockLevel,
+      manual_price: entity.manualPrice ?? null,
       created_at: entity.createdAt.toISOString(),
       updated_at: entity.updatedAt.toISOString(),
     };

@@ -17,7 +17,23 @@ const SENSITIVE_KEYS = new Set([
 ]);
 
 function sanitizeValue(value: unknown): unknown {
+  if (Buffer.isBuffer(value)) {
+    return `[BINARY ${value.length} bytes]`;
+  }
+
+  if (value instanceof Uint8Array) {
+    return `[BINARY ${value.byteLength} bytes]`;
+  }
+
   if (Array.isArray(value)) {
+    if (value.length > 20) {
+      return {
+        type: 'array',
+        length: value.length,
+        sample: value.slice(0, 10).map(item => sanitizeValue(item)),
+      };
+    }
+
     return value.map(item => sanitizeValue(item));
   }
 
@@ -31,7 +47,31 @@ function sanitizeValue(value: unknown): unknown {
     return output;
   }
 
+  if (typeof value === 'string' && value.length > 500) {
+    return `${value.slice(0, 497)}...`;
+  }
+
   return value;
+}
+
+function summarizeBodyForLog(body: unknown): { kind: string; value: unknown } {
+  if (Buffer.isBuffer(body)) {
+    return { kind: 'binary', value: `[BINARY ${body.length} bytes]` };
+  }
+
+  if (body instanceof Uint8Array) {
+    return { kind: 'binary', value: `[BINARY ${body.byteLength} bytes]` };
+  }
+
+  if (body && typeof body === 'object' && !Array.isArray(body)) {
+    return { kind: 'object', value: sanitizeValue(body) };
+  }
+
+  if (Array.isArray(body)) {
+    return { kind: 'array', value: sanitizeValue(body) };
+  }
+
+  return { kind: typeof body, value: sanitizeValue(body) };
 }
 
 export function createRequestLogger(auditService: AuditService) {
@@ -46,10 +86,11 @@ export function createRequestLogger(auditService: AuditService) {
       const requestIp = req.ip ?? req.socket?.remoteAddress ?? null;
       const message = `${req.method} ${path} ${statusCode} ${duration}ms`;
       const query = sanitizeValue(req.query);
-      const body = sanitizeValue(req.body);
+      const bodySummary = summarizeBodyForLog(req.body);
       const metadata = {
         query,
-        body,
+        body: bodySummary.value,
+        bodyKind: bodySummary.kind,
       };
       const logMeta = {
         userId: requestUserId,

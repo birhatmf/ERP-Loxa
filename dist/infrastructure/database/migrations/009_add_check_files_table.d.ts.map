@@ -1,0 +1,1 @@
+{"version":3,"file":"009_add_check_files_table.d.ts","sourceRoot":"","sources":["../../../../src/infrastructure/database/migrations/009_add_check_files_table.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,IAAI,EAAE,MAAM,MAAM,CAAC;AAE5B,wBAAsB,EAAE,CAAC,IAAI,EAAE,IAAI,GAAG,OAAO,CAAC,IAAI,CAAC,CAelD;AAED,wBAAsB,IAAI,CAAC,IAAI,EAAE,IAAI,GAAG,OAAO,CAAC,IAAI,CAAC,CAEpD"}

@@ -6,6 +6,7 @@ interface MaterialProps {
     unit: Unit;
     currentStock: number;
     minStockLevel: number;
+    manualPrice?: number | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -20,6 +21,7 @@ export declare class Material extends AggregateRoot {
     private _unit;
     private _currentStock;
     private _minStockLevel;
+    private _manualPrice;
     private constructor();
     static create(params: {
         name: string;
@@ -31,6 +33,7 @@ export declare class Material extends AggregateRoot {
     get unit(): Unit;
     get currentStock(): number;
     get minStockLevel(): number;
+    get manualPrice(): number | null;
     get isLowStock(): boolean;
     /**
      * Increase stock. Called internally by domain service.
@@ -47,7 +50,16 @@ export declare class Material extends AggregateRoot {
         name?: string;
         unit?: Unit;
         minStockLevel?: number;
+        manualPrice?: number | null;
     }): void;
+    /**
+     * Set manual purchase price override.
+     */
+    setManualPrice(price: number | null): void;
+    /**
+     * Rebuild current stock from stock movement history.
+     */
+    rebuildStock(newStock: number): void;
 }
 export {};
 //# sourceMappingURL=material.entity.d.ts.map

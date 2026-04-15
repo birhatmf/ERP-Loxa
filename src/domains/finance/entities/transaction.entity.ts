@@ -141,4 +141,58 @@ export class Transaction extends AggregateRoot {
     this._relatedProjectId = projectId;
     this.touch();
   }
+
+  /**
+   * Update editable transaction details.
+   * RULE: Amount must remain positive and cancelled transactions cannot be edited.
+   */
+  updateDetails(params: {
+    amount?: Money;
+    vatAmount?: Money;
+    type?: TransactionType;
+    paymentMethod?: PaymentMethod;
+    isInvoiced?: boolean;
+    description?: string;
+    relatedProjectId?: string | null;
+  }): void {
+    if (this._status === TransactionStatus.CANCELLED) {
+      throw new BusinessRuleViolationError('Cancelled transactions cannot be edited');
+    }
+
+    if (params.amount !== undefined) {
+      if (params.amount.isZero() || params.amount.isNegative()) {
+        throw new BusinessRuleViolationError('Transaction amount must be positive');
+      }
+      this._amount = params.amount;
+    }
+
+    if (params.vatAmount !== undefined) {
+      if (params.vatAmount.isNegative()) {
+        throw new BusinessRuleViolationError('VAT amount cannot be negative');
+      }
+      this._vatAmount = params.vatAmount;
+    }
+
+    if (params.type !== undefined) {
+      this._type = params.type;
+    }
+
+    if (params.paymentMethod !== undefined) {
+      this._paymentMethod = params.paymentMethod;
+    }
+
+    if (params.isInvoiced !== undefined) {
+      this._isInvoiced = params.isInvoiced;
+    }
+
+    if (params.description !== undefined) {
+      this._description = params.description;
+    }
+
+    if (params.relatedProjectId !== undefined) {
+      this._relatedProjectId = params.relatedProjectId ?? undefined;
+    }
+
+    this.touch();
+  }
 }

@@ -14,12 +14,14 @@ class Material extends types_1.AggregateRoot {
     _unit;
     _currentStock;
     _minStockLevel;
+    _manualPrice;
     constructor(props) {
         super(props.id, props.createdAt, props.updatedAt);
         this._name = props.name;
         this._unit = props.unit;
         this._currentStock = props.currentStock;
         this._minStockLevel = props.minStockLevel;
+        this._manualPrice = props.manualPrice ?? null;
     }
     static create(params) {
         if (!params.name || params.name.trim().length === 0) {
@@ -35,6 +37,7 @@ class Material extends types_1.AggregateRoot {
             unit: params.unit,
             currentStock: 0,
             minStockLevel: params.minStockLevel,
+            manualPrice: null,
             createdAt: now,
             updatedAt: now,
         });
@@ -47,6 +50,7 @@ class Material extends types_1.AggregateRoot {
     get unit() { return this._unit; }
     get currentStock() { return this._currentStock; }
     get minStockLevel() { return this._minStockLevel; }
+    get manualPrice() { return this._manualPrice; }
     get isLowStock() { return this._currentStock <= this._minStockLevel; }
     // --- Domain behavior (called by StockService, not directly) ---
     /**
@@ -97,6 +101,29 @@ class Material extends types_1.AggregateRoot {
             }
             this._minStockLevel = params.minStockLevel;
         }
+        if (params.manualPrice !== undefined) {
+            this.setManualPrice(params.manualPrice);
+        }
+        this.touch();
+    }
+    /**
+     * Set manual purchase price override.
+     */
+    setManualPrice(price) {
+        if (price !== null && price !== undefined && price < 0) {
+            throw new types_1.BusinessRuleViolationError('Manual price cannot be negative');
+        }
+        this._manualPrice = price ?? null;
+        this.touch();
+    }
+    /**
+     * Rebuild current stock from stock movement history.
+     */
+    rebuildStock(newStock) {
+        if (newStock < 0) {
+            throw new types_1.BusinessRuleViolationError('Stock cannot be negative');
+        }
+        this._currentStock = newStock;
         this.touch();
     }
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import type { Material } from '../types';
-import { Plus, Truck, X, Phone, Mail, MapPin, ShoppingCart, Check, AlertTriangle } from 'lucide-react';
+import { Plus, Truck, X, Phone, Mail, MapPin, ShoppingCart, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 
 interface Supplier {
   id: string;
@@ -14,6 +14,7 @@ interface Supplier {
   notes: string;
   totalOrders: number;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface PurchaseOrder {
@@ -53,8 +54,11 @@ export default function SuppliersPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSupplierForm, setShowSupplierForm] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<PurchaseOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [orderStatusUpdating, setOrderStatusUpdating] = useState<string | null>(null);
 
   const [supplierForm, setSupplierForm] = useState({
     name: '', contactPerson: '', phone: '', email: '', address: '', taxId: '', notes: '',
@@ -63,6 +67,57 @@ export default function SuppliersPage() {
     supplierId: '', expectedDate: '', description: '',
     items: [{ materialId: '', quantity: '', unitPrice: '' }],
   });
+
+  const resetOrderForm = () => {
+    setOrderForm({ supplierId: '', expectedDate: '', description: '', items: [{ materialId: '', quantity: '', unitPrice: '' }] });
+  };
+
+  const resetSupplierForm = () => {
+    setSupplierForm({ name: '', contactPerson: '', phone: '', email: '', address: '', taxId: '', notes: '' });
+    setEditingSupplier(null);
+  };
+
+  const openCreateSupplier = () => {
+    resetSupplierForm();
+    setShowSupplierForm(true);
+  };
+
+  const openEditSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setSupplierForm({
+      name: supplier.name,
+      contactPerson: supplier.contactPerson,
+      phone: supplier.phone,
+      email: supplier.email,
+      address: supplier.address,
+      taxId: supplier.taxId,
+      notes: supplier.notes,
+    });
+    setShowSupplierForm(true);
+  };
+
+  const openCreateOrder = () => {
+    setEditingOrder(null);
+    resetOrderForm();
+    setShowOrderForm(true);
+  };
+
+  const openEditOrder = (order: PurchaseOrder) => {
+    setEditingOrder(order);
+    setOrderForm({
+      supplierId: order.supplierId,
+      expectedDate: order.expectedDate ? order.expectedDate.slice(0, 10) : '',
+      description: order.description,
+      items: order.items.length > 0
+        ? order.items.map(item => ({
+            materialId: item.materialId,
+            quantity: String(item.quantity),
+            unitPrice: String(item.unitPrice),
+          }))
+        : [{ materialId: '', quantity: '1', unitPrice: '' }],
+    });
+    setShowOrderForm(true);
+  };
 
   const fetchData = async () => {
     const [sRes, oRes, mRes] = await Promise.all([
@@ -85,24 +140,61 @@ export default function SuppliersPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/api/suppliers', supplierForm);
+      if (editingSupplier) {
+        await api.patch(`/api/suppliers/${editingSupplier.id}`, supplierForm);
+      } else {
+        await api.post('/api/suppliers', supplierForm);
+      }
       fetchData();
     } catch {
-      setSuppliers(prev => [{ id: Date.now().toString(), ...supplierForm, totalOrders: 0, createdAt: new Date().toISOString() }, ...prev]);
+      const now = new Date().toISOString();
+      if (editingSupplier) {
+        setSuppliers(prev => prev.map(s => s.id === editingSupplier.id ? {
+          ...s,
+          ...supplierForm,
+          updatedAt: now,
+        } : s));
+      } else {
+        setSuppliers(prev => [{
+          id: Date.now().toString(),
+          ...supplierForm,
+          totalOrders: 0,
+          createdAt: now,
+          updatedAt: now,
+        }, ...prev]);
+      }
     }
     setShowSupplierForm(false);
-    setSupplierForm({ name: '', contactPerson: '', phone: '', email: '', address: '', taxId: '', notes: '' });
+    resetSupplierForm();
     setSubmitting(false);
+  };
+
+  const handleDeleteSupplier = async (supplier: Supplier) => {
+    if (!window.confirm(`"${supplier.name}" tedarikçisini silmek istiyor musun?`)) return;
+    try {
+      await api.delete(`/api/suppliers/${supplier.id}`);
+      fetchData();
+    } catch (error: any) {
+      const message = error?.response?.data?.error || error?.message || 'Tedarikçi silinemedi';
+      window.alert(message);
+    }
   };
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/api/purchase-orders', {
+      const validItems = orderForm.items.filter(i => i.materialId && parseFloat(i.quantity) > 0 && parseFloat(i.unitPrice) >= 0);
+      const payload = {
         ...orderForm,
-        items: orderForm.items.map(i => ({ materialId: i.materialId, quantity: parseFloat(i.quantity), unitPrice: parseFloat(i.unitPrice) })),
-      });
+        items: validItems.map(i => ({ materialId: i.materialId, quantity: parseFloat(i.quantity), unitPrice: parseFloat(i.unitPrice) })),
+      };
+
+      if (editingOrder) {
+        await api.patch(`/api/purchase-orders/${editingOrder.id}`, payload);
+      } else {
+        await api.post('/api/purchase-orders', payload);
+      }
       fetchData();
     } catch {
       const items: POItem[] = orderForm.items.map((i, idx) => ({
@@ -114,22 +206,55 @@ export default function SuppliersPage() {
         receivedQty: 0,
       }));
       const totalAmount = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-      setOrders(prev => [{
-        id: Date.now().toString(),
+      const nextOrder = {
+        id: editingOrder?.id || Date.now().toString(),
         supplierId: orderForm.supplierId,
         supplierName: suppliers.find(s => s.id === orderForm.supplierId)?.name || '',
         items,
         totalAmount,
-        status: 'draft',
+        status: (editingOrder?.status || 'draft') as PurchaseOrder['status'],
         expectedDate: orderForm.expectedDate,
-        receivedDate: '',
+        receivedDate: editingOrder?.receivedDate || '',
         description: orderForm.description,
-        createdAt: new Date().toISOString(),
-      }, ...prev]);
+        createdAt: editingOrder?.createdAt || new Date().toISOString(),
+      };
+
+      setOrders(prev => editingOrder
+        ? prev.map(o => o.id === editingOrder.id ? nextOrder : o)
+        : [nextOrder, ...prev]
+      );
     }
     setShowOrderForm(false);
-    setOrderForm({ supplierId: '', expectedDate: '', description: '', items: [{ materialId: '', quantity: '', unitPrice: '' }] });
+    setEditingOrder(null);
+    resetOrderForm();
     setSubmitting(false);
+  };
+
+  const handleStatusChange = async (order: PurchaseOrder, status: PurchaseOrder['status']) => {
+    if (order.status === status) return;
+    setOrderStatusUpdating(order.id);
+    try {
+      await api.patch(`/api/purchase-orders/${order.id}/status`, { status });
+      fetchData();
+    } catch {
+      setOrders(prev => prev.map(o => o.id === order.id ? {
+        ...o,
+        status,
+        receivedDate: status === 'received' && !o.receivedDate ? new Date().toISOString() : o.receivedDate,
+      } : o));
+    } finally {
+      setOrderStatusUpdating(null);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm('Bu siparişi silmek istiyor musun?')) return;
+    try {
+      await api.delete(`/api/purchase-orders/${orderId}`);
+      fetchData();
+    } catch {
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    }
   };
 
   const addOrderItem = () => setOrderForm({ ...orderForm, items: [...orderForm.items, { materialId: '', quantity: '', unitPrice: '' }] });
@@ -184,7 +309,7 @@ export default function SuppliersPage() {
       {tab === 'suppliers' && (
         <div>
           <div className="flex justify-end mb-4">
-            <button onClick={() => setShowSupplierForm(true)} className="btn btn-primary"><Plus size={16} /> Tedarikçi Ekle</button>
+            <button onClick={openCreateSupplier} className="btn btn-primary"><Plus size={16} /> Tedarikçi Ekle</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {suppliers.length === 0 ? (
@@ -209,6 +334,14 @@ export default function SuppliersPage() {
                     {s.email && <div className="flex items-center gap-2"><Mail size={13} className="text-gray-400" />{s.email}</div>}
                     {s.address && <div className="flex items-center gap-2"><MapPin size={13} className="text-gray-400" />{s.address}</div>}
                   </div>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button onClick={() => openEditSupplier(s)} className="btn btn-secondary !px-3 !py-1.5 text-xs">
+                      <Pencil size={13} /> Düzenle
+                    </button>
+                    <button onClick={() => handleDeleteSupplier(s)} className="btn btn-secondary !px-3 !py-1.5 text-xs text-red-600 hover:bg-red-50">
+                      <Trash2 size={13} /> Sil
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -220,7 +353,7 @@ export default function SuppliersPage() {
       {tab === 'orders' && (
         <div>
           <div className="flex justify-end mb-4">
-            <button onClick={() => setShowOrderForm(true)} className="btn btn-primary"><Plus size={16} /> Yeni Sipariş</button>
+        <button onClick={openCreateOrder} className="btn btn-primary"><Plus size={16} /> Yeni Sipariş</button>
           </div>
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
@@ -231,20 +364,44 @@ export default function SuppliersPage() {
                     <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Tedarikçi</th>
                     <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Durum</th>
                     <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Beklenen Tarih</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Kayıt</th>
                     <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Tutar</th>
+                    <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {orders.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center text-sm text-gray-500 py-8">Sipariş bulunmuyor</td></tr>
+                    <tr><td colSpan={7} className="text-center text-sm text-gray-500 py-8">Sipariş bulunmuyor</td></tr>
                   ) : (
                     orders.map(o => (
                       <tr key={o.id} className="hover:bg-gray-50">
                         <td className="px-5 py-3.5 text-sm text-gray-500">{formatDate(o.createdAt)}</td>
                         <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{o.supplierName}</td>
-                        <td className="px-5 py-3.5"><span className={`badge ${PO_STATUS[o.status]?.class}`}>{PO_STATUS[o.status]?.label}</span></td>
+                        <td className="px-5 py-3.5">
+                          <select
+                            className="select text-sm py-1.5"
+                            value={o.status}
+                            onChange={e => handleStatusChange(o, e.target.value as PurchaseOrder['status'])}
+                            disabled={orderStatusUpdating === o.id}
+                          >
+                            {Object.entries(PO_STATUS).map(([value, config]) => (
+                              <option key={value} value={value}>{config.label}</option>
+                            ))}
+                          </select>
+                        </td>
                         <td className="px-5 py-3.5 text-sm text-gray-600">{formatDate(o.expectedDate)}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-600">{o.receivedDate ? formatDate(o.receivedDate) : '-'}</td>
                         <td className="px-5 py-3.5 text-sm font-semibold text-gray-900 text-right">{formatCurrency(o.totalAmount)}</td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => openEditOrder(o)} className="btn btn-secondary !px-3 !py-1.5 text-xs">
+                              <Pencil size={13} /> Düzenle
+                            </button>
+                            <button onClick={() => handleDeleteOrder(o.id)} className="btn btn-secondary !px-3 !py-1.5 text-xs text-red-600 hover:bg-red-50">
+                              <Trash2 size={13} /> Sil
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -260,8 +417,8 @@ export default function SuppliersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
           <div className="card w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-gray-900">Yeni Tedarikçi</h3>
-              <button onClick={() => setShowSupplierForm(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              <h3 className="text-lg font-semibold text-gray-900">{editingSupplier ? 'Tedarikçiyi Düzenle' : 'Yeni Tedarikçi'}</h3>
+              <button onClick={() => { setShowSupplierForm(false); resetSupplierForm(); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleCreateSupplier} className="space-y-4">
               <input type="text" className="input" placeholder="Firma Adı *" value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} required />
@@ -273,8 +430,8 @@ export default function SuppliersPage() {
               <input type="text" className="input" placeholder="Adres" value={supplierForm.address} onChange={e => setSupplierForm({...supplierForm, address: e.target.value})} />
               <input type="text" className="input" placeholder="Vergi No" value={supplierForm.taxId} onChange={e => setSupplierForm({...supplierForm, taxId: e.target.value})} />
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowSupplierForm(false)} className="btn btn-secondary flex-1">İptal</button>
-                <button type="submit" disabled={submitting} className="btn btn-primary flex-1">Kaydet</button>
+                <button type="button" onClick={() => { setShowSupplierForm(false); resetSupplierForm(); }} className="btn btn-secondary flex-1">İptal</button>
+                <button type="submit" disabled={submitting} className="btn btn-primary flex-1">{editingSupplier ? 'Güncelle' : 'Kaydet'}</button>
               </div>
             </form>
           </div>
@@ -286,7 +443,9 @@ export default function SuppliersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
           <div className="card w-full max-w-2xl p-6 max-h-[90vh] overflow-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-gray-900">Yeni Satın Alma Siparişi</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {editingOrder ? 'Satın Alma Siparişini Düzenle' : 'Yeni Satın Alma Siparişi'}
+              </h3>
               <button onClick={() => setShowOrderForm(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleCreateOrder} className="space-y-4">
@@ -326,9 +485,9 @@ export default function SuppliersPage() {
 
               <textarea className="input min-h-[60px]" placeholder="Açıklama..." value={orderForm.description} onChange={e => setOrderForm({...orderForm, description: e.target.value})} />
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowOrderForm(false)} className="btn btn-secondary flex-1">İptal</button>
+                <button type="button" onClick={() => { setShowOrderForm(false); setEditingOrder(null); resetOrderForm(); }} className="btn btn-secondary flex-1">İptal</button>
                 <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
-                  {submitting ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : 'Sipariş Oluştur'}
+                  {submitting ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : editingOrder ? 'Kaydet' : 'Sipariş Oluştur'}
                 </button>
               </div>
             </form>

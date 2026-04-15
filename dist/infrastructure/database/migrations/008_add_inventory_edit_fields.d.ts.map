@@ -1,0 +1,1 @@
+{"version":3,"file":"008_add_inventory_edit_fields.d.ts","sourceRoot":"","sources":["../../../../src/infrastructure/database/migrations/008_add_inventory_edit_fields.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,IAAI,EAAE,MAAM,MAAM,CAAC;AAE5B,wBAAsB,EAAE,CAAC,IAAI,EAAE,IAAI,GAAG,OAAO,CAAC,IAAI,CAAC,CAiBlD;AAED,wBAAsB,IAAI,CAAC,IAAI,EAAE,IAAI,GAAG,OAAO,CAAC,IAAI,CAAC,CAiBpD"}

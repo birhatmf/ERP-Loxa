@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import type { Project } from '../types';
-import { Plus, FolderKanban, X, ArrowRight } from 'lucide-react';
+import { Plus, FolderKanban, X, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const STATUS_MAP: Record<string, { label: string; class: string }> = {
@@ -18,11 +18,16 @@ export default function ProjectsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', customerName: '', totalPrice: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', customerName: '', description: '', totalPrice: '' });
 
   const fetchProjects = async () => {
-    const { data } = await api.get('/api/project/projects');
-    setProjects(data);
-    setLoading(false);
+    try {
+      const { data } = await api.get('/api/project/projects');
+      setProjects(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchProjects(); }, []);
@@ -36,6 +41,49 @@ export default function ProjectsPage() {
       setForm({ name: '', customerName: '', totalPrice: '' });
       fetchProjects();
     } finally { setSubmitting(false); }
+  };
+
+  const openEdit = (project: Project) => {
+    setEditingProject(project);
+    setEditForm({
+      name: project.name,
+      customerName: project.customerName,
+      description: project.description || '',
+      totalPrice: String(project.totalPrice),
+    });
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject) return;
+
+    setSubmitting(true);
+    try {
+      const { data } = await api.patch(`/api/project/projects/${editingProject.id}`, {
+        name: editForm.name,
+        customerName: editForm.customerName,
+        description: editForm.description,
+        totalPrice: parseFloat(editForm.totalPrice) || 0,
+      });
+
+      setProjects(prev => prev.map(project => (project.id === editingProject.id ? { ...project, ...data } : project)));
+      setEditingProject(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (project: Project) => {
+    const confirmed = window.confirm(`"${project.name}" projesini silmek istediğine emin misin?`);
+    if (!confirmed) return;
+
+    setSubmitting(true);
+    try {
+      await api.delete(`/api/project/projects/${project.id}`);
+      setProjects(prev => prev.filter(p => p.id !== project.id));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
@@ -102,9 +150,30 @@ export default function ProjectsPage() {
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-500 text-center">{p.itemCount}</td>
                     <td className="px-5 py-4 text-right">
-                      <Link to={`/projects/${p.id}`} className="text-brand-600 hover:text-brand-700 text-sm font-medium inline-flex items-center gap-1">
-                        Detay <ArrowRight size={14} />
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(p)}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                          title="Düzenle"
+                        >
+                          <Pencil size={14} />
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p)}
+                          disabled={submitting}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                          title="Sil"
+                        >
+                          <Trash2 size={14} />
+                          Sil
+                        </button>
+                        <Link to={`/projects/${p.id}`} className="text-brand-600 hover:text-brand-700 text-sm font-medium inline-flex items-center gap-1">
+                          Detay <ArrowRight size={14} />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -139,6 +208,42 @@ export default function ProjectsPage() {
                 <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary flex-1">İptal</button>
                 <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
                   {submitting ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : 'Oluştur'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-semibold text-gray-900">Proje Düzenle</h3>
+              <button onClick={() => setEditingProject(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Proje Adı</label>
+                <input type="text" className="input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Müşteri Adı</label>
+                <input type="text" className="input" value={editForm.customerName} onChange={e => setEditForm({...editForm, customerName: e.target.value})} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Açıklama</label>
+                <textarea className="input min-h-[96px]" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Toplam Fiyat (₺)</label>
+                <input type="number" step="0.01" className="input" value={editForm.totalPrice} onChange={e => setEditForm({...editForm, totalPrice: e.target.value})} required />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingProject(null)} className="btn btn-secondary flex-1">İptal</button>
+                <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
+                  {submitting ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : 'Kaydet'}
                 </button>
               </div>
             </form>

@@ -13,6 +13,7 @@ describe('Material Entity', () => {
     expect(material.unit).toBe(Unit.M2);
     expect(material.currentStock).toBe(0);
     expect(material.minStockLevel).toBe(10);
+    expect(material.manualPrice).toBeNull();
   });
 
   it('should detect low stock', () => {
@@ -82,5 +83,16 @@ describe('Material Entity', () => {
     const lowStockEvent = material.domainEvents.find(e => e.eventName === 'LowStockWarning');
     expect(lowStockEvent).toBeDefined();
     expect((lowStockEvent as any).currentStock).toBe(5);
+  });
+
+  it('should allow manual price override', () => {
+    const material = Material.create({
+      name: 'Test',
+      unit: Unit.ADET,
+      minStockLevel: 10,
+    });
+
+    material.setManualPrice(125.5);
+    expect(material.manualPrice).toBe(125.5);
   });
 });

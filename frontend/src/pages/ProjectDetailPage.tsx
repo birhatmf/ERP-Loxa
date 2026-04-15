@@ -3,7 +3,15 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../api/client';
 import type { Project, Material } from '../types';
 import DropZone from '../components/DropZone';
-import { ArrowLeft, Plus, X, Package, Upload, FileText, Image } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Upload, FileText, Image, RefreshCw } from 'lucide-react';
+
+const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Taslak' },
+  { value: 'active', label: 'Aktif' },
+  { value: 'in_progress', label: 'Devam Ediyor' },
+  { value: 'completed', label: 'Tamamlandı' },
+  { value: 'cancelled', label: 'İptal' },
+];
 
 const STATUS_MAP: Record<string, { label: string; class: string }> = {
   draft: { label: 'Taslak', class: 'badge-gray' },
@@ -42,6 +50,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showItemForm, setShowItemForm] = useState(false);
   const [showCostForm, setShowCostForm] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [costBreakdown, setCostBreakdown] = useState<CostBreakdown[]>([]);
   const [itemForm, setItemForm] = useState({ materialId: '', quantity: '', unitPrice: '', costCategory: 'material' });
@@ -79,6 +88,17 @@ export default function ProjectDetailPage() {
       setItemForm({ materialId: '', quantity: '', unitPrice: '', costCategory: 'material' });
       fetchProject();
     } finally { setSubmitting(false); }
+  };
+
+  const handleStatusChange = async (status: string) => {
+    if (!project || status === project.status) return;
+    setUpdatingStatus(true);
+    try {
+      const { data } = await api.patch(`/api/project/projects/${id}/status`, { status });
+      setProject(prev => prev ? { ...prev, ...data } : prev);
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   const handleAddCost = async (e: React.FormEvent) => {
@@ -139,6 +159,20 @@ export default function ProjectDetailPage() {
   const handleRemoveFile = async (fileId: string) => {
     try { await api.delete(`/api/project/projects/${id}/files/${fileId}`); } catch {}
     setFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
+  const handleOpenFile = async (file: ProjectFile) => {
+    try {
+      const response = await api.get(file.url, { responseType: 'blob' });
+      const blob = new Blob([response.data], {
+        type: response.headers?.['content-type'] || file.type || 'application/octet-stream',
+      });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch {
+      window.open(file.url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
@@ -203,6 +237,28 @@ export default function ProjectDetailPage() {
         <div className="card p-4">
           <p className="text-xs text-gray-500">Dosyalar</p>
           <p className="text-lg font-bold text-gray-900">{files.length}</p>
+        </div>
+      </div>
+
+      {/* Status Change */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <RefreshCw size={16} className="text-brand-600" /> Proje Durumu
+          </h3>
+          <span className="text-sm text-gray-500">{project.status}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {STATUS_OPTIONS.map(s => (
+            <button
+              key={s.value}
+              onClick={() => handleStatusChange(s.value)}
+              disabled={updatingStatus || project.status === s.value}
+              className={`btn text-sm ${project.status === s.value ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -300,6 +356,7 @@ export default function ProjectDetailPage() {
           maxSize={25}
           existingFiles={files}
           onRemoveFile={handleRemoveFile}
+          onOpenFile={handleOpenFile}
         />
       </div>
 

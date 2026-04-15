@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import type { Material, StockHistory } from '../types';
-import { Plus, Package, AlertTriangle, X, History } from 'lucide-react';
+import { Plus, Package, AlertTriangle, X, History, Pencil, RefreshCw } from 'lucide-react';
 
 export default function InventoryPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [showStockForm, setShowStockForm] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [history, setHistory] = useState<StockHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [editingMovement, setEditingMovement] = useState<StockHistory | null>(null);
   const [form, setForm] = useState({ name: '', unit: 'adet', minStockLevel: '' });
+  const [editForm, setEditForm] = useState({ name: '', unit: 'adet', minStockLevel: '', manualPrice: '' });
+  const [movementForm, setMovementForm] = useState({ materialId: '', quantity: '', type: 'IN', description: '', date: '' });
   const [stockForm, setStockForm] = useState({ quantity: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,6 +39,36 @@ export default function InventoryPage() {
     } finally { setSubmitting(false); }
   };
 
+  const openEditMaterial = (material: Material) => {
+    setEditingMaterial(material);
+    setEditForm({
+      name: material.name,
+      unit: material.unit,
+      minStockLevel: String(material.minStockLevel),
+      manualPrice: material.manualPrice !== undefined && material.manualPrice !== null ? String(material.manualPrice) : '',
+    });
+    setShowEditForm(true);
+  };
+
+  const handleUpdateMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMaterial) return;
+    setSubmitting(true);
+    try {
+      await api.patch(`/api/inventory/materials/${editingMaterial.id}`, {
+        name: editForm.name,
+        unit: editForm.unit,
+        minStockLevel: parseFloat(editForm.minStockLevel) || 0,
+        manualPrice: editForm.manualPrice === '' ? null : parseFloat(editForm.manualPrice),
+      });
+      setShowEditForm(false);
+      setEditingMaterial(null);
+      fetchMaterials();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleAddStock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!showStockForm) return;
@@ -54,6 +89,43 @@ export default function InventoryPage() {
       setHistory(data);
     } catch { setHistory([]); }
     finally { setHistoryLoading(false); }
+  };
+
+  const openMovementEdit = (movement: StockHistory) => {
+    setEditingMovement(movement);
+    setMovementForm({
+      materialId: movement.materialId,
+      quantity: String(movement.quantity),
+      type: movement.type || 'IN',
+      description: movement.description || '',
+      date: movement.createdAt ? movement.createdAt.slice(0, 16) : '',
+    });
+  };
+
+  const handleUpdateMovement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showHistory || !editingMovement) return;
+    setSubmitting(true);
+    try {
+      await api.patch(`/api/inventory/materials/${showHistory}/history/${editingMovement.id}`, {
+        materialId: movementForm.materialId,
+        quantity: parseFloat(movementForm.quantity),
+        type: movementForm.type,
+        description: movementForm.description,
+        date: movementForm.date ? new Date(movementForm.date).toISOString() : undefined,
+        correctionReason: 'Stok hareketi düzeltildi',
+      });
+      setEditingMovement(null);
+      await fetchMaterials();
+      await openHistory(showHistory);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) return '-';
+    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
   };
 
   if (loading) {
@@ -102,7 +174,12 @@ export default function InventoryPage() {
                     <p className="text-xs text-gray-500 uppercase">{m.unit}</p>
                   </div>
                 </div>
-                {m.isLowStock && <span className="badge badge-red">Düşük</span>}
+                <div className="flex items-center gap-2">
+                  {m.isLowStock && <span className="badge badge-red">Düşük</span>}
+                  <button onClick={() => openEditMaterial(m)} className="btn btn-secondary !px-3 !py-2 text-xs">
+                    <Pencil size={14} />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-end justify-between mt-4">
@@ -120,6 +197,22 @@ export default function InventoryPage() {
                   <button onClick={() => { setShowStockForm(m.id); setStockForm({ quantity: '', description: '' }); }} className="btn btn-primary !px-3 !py-2 text-xs">
                     <Plus size={14} /> Stok
                   </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3">
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Güncel Fiyat</p>
+                  <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    {formatCurrency(m.currentPrice)}
+                    {m.manualPrice !== undefined && m.manualPrice !== null && (
+                      <span className="badge badge-blue text-[10px]">Manuel</span>
+                    )}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 mb-0.5">Toplam Değer</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(m.totalValue)}</p>
                 </div>
               </div>
 
@@ -175,6 +268,48 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {/* Edit Material Modal */}
+      {showEditForm && editingMaterial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-semibold text-gray-900">Malzemeyi Düzenle</h3>
+              <button onClick={() => { setShowEditForm(false); setEditingMaterial(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleUpdateMaterial} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Malzeme Adı</label>
+                <input type="text" className="input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Birim</label>
+                  <select className="select" value={editForm.unit} onChange={e => setEditForm({...editForm, unit: e.target.value})}>
+                    <option value="adet">Adet</option>
+                    <option value="m2">m²</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Min. Stok Seviyesi</label>
+                  <input type="number" className="input" value={editForm.minStockLevel} onChange={e => setEditForm({...editForm, minStockLevel: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Güncel Fiyat (manuel)</label>
+                <input type="number" step="0.01" className="input" placeholder="Boş bırakırsan son satın alma fiyatı kullanılır" value={editForm.manualPrice} onChange={e => setEditForm({...editForm, manualPrice: e.target.value})} />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setShowEditForm(false); setEditingMaterial(null); }} className="btn btn-secondary flex-1">İptal</button>
+                <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
+                  {submitting ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : 'Kaydet'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Add Stock Modal */}
       {showStockForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
@@ -218,18 +353,82 @@ export default function InventoryPage() {
             ) : (
               <div className="space-y-3">
                 {history.map(h => (
-                  <div key={h.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={h.id} className={`flex items-center justify-between p-3 rounded-lg border ${h.isCorrection ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-transparent'}`}>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{h.description || 'Stok hareketi'}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-medium ${h.isCorrection ? 'text-red-700' : 'text-gray-900'}`}>
+                          {h.description || 'Stok hareketi'}
+                        </p>
+                        {h.isCorrection && <span className="badge badge-red text-[10px]">Düzeltme</span>}
+                      </div>
                       <p className="text-xs text-gray-500">{new Date(h.createdAt).toLocaleString('tr-TR')}</p>
+                      {h.correctionReason && (
+                        <p className="text-xs text-red-600 mt-1">{h.correctionReason}</p>
+                      )}
                     </div>
-                    <span className={`text-sm font-semibold ${h.quantity >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {h.quantity >= 0 ? '+' : ''}{h.quantity}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold ${h.isCorrection ? 'text-red-700' : h.type === 'OUT' ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {h.type === 'OUT' ? '-' : '+'}{h.quantity}
+                      </span>
+                      <button onClick={() => openMovementEdit(h)} className="btn btn-secondary !px-2.5 !py-1.5 text-xs">
+                        <Pencil size={12} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Stock Movement Modal */}
+      {editingMovement && showHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-semibold text-gray-900">Stok Hareketini Düzenle</h3>
+              <button onClick={() => setEditingMovement(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleUpdateMovement} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Malzeme</label>
+                <select className="select" value={movementForm.materialId} onChange={e => setMovementForm({...movementForm, materialId: e.target.value})}>
+                  {materials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Tür</label>
+                  <select className="select" value={movementForm.type} onChange={e => setMovementForm({...movementForm, type: e.target.value})}>
+                    <option value="IN">Giriş</option>
+                    <option value="OUT">Çıkış</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Tarih</label>
+                  <input type="datetime-local" className="input" value={movementForm.date} onChange={e => setMovementForm({...movementForm, date: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Miktar</label>
+                <input type="number" step="0.01" className="input" value={movementForm.quantity} onChange={e => setMovementForm({...movementForm, quantity: e.target.value})} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Açıklama</label>
+                <input type="text" className="input" value={movementForm.description} onChange={e => setMovementForm({...movementForm, description: e.target.value})} />
+              </div>
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 flex items-start gap-2">
+                <RefreshCw size={14} className="mt-0.5 flex-shrink-0" />
+                Bu işlem geçmişte kırmızı düzeltme olarak işaretlenir ve stok yeniden hesaplanır.
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingMovement(null)} className="btn btn-secondary flex-1">İptal</button>
+                <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
+                  {submitting ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : 'Düzelt'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

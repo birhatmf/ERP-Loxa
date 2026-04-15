@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateProjectStatus = exports.AddProjectItem = exports.CreateProject = void 0;
+exports.DeleteProject = exports.UpdateProjectInfo = exports.UpdateProjectStatus = exports.AddProjectItem = exports.CreateProject = void 0;
 const types_1 = require("@shared/types");
 const project_1 = require("@domains/project");
 /**
@@ -102,4 +102,56 @@ class UpdateProjectStatus {
     }
 }
 exports.UpdateProjectStatus = UpdateProjectStatus;
+/**
+ * UpdateProjectInfo Use Case
+ * Updates editable project fields without changing lifecycle state.
+ */
+class UpdateProjectInfo {
+    projectRepo;
+    eventBus;
+    constructor(projectRepo, eventBus) {
+        this.projectRepo = projectRepo;
+        this.eventBus = eventBus;
+    }
+    async execute(params) {
+        const project = await this.projectRepo.findById(params.projectId);
+        if (!project) {
+            throw new Error(`Project not found: ${params.projectId}`);
+        }
+        project.updateInfo({
+            name: params.name,
+            customerName: params.customerName,
+            description: params.description,
+            totalPrice: params.totalPrice !== undefined
+                ? types_1.Money.create(params.totalPrice, params.currency)
+                : undefined,
+        });
+        await this.projectRepo.save(project);
+        await this.eventBus.publishAll(project.domainEvents);
+        project.clearEvents();
+        return project;
+    }
+}
+exports.UpdateProjectInfo = UpdateProjectInfo;
+/**
+ * DeleteProject Use Case
+ * Removes a project and its items.
+ */
+class DeleteProject {
+    projectRepo;
+    projectFileRepo;
+    constructor(projectRepo, projectFileRepo) {
+        this.projectRepo = projectRepo;
+        this.projectFileRepo = projectFileRepo;
+    }
+    async execute(projectId) {
+        const project = await this.projectRepo.findById(projectId);
+        if (!project) {
+            throw new Error(`Project not found: ${projectId}`);
+        }
+        await this.projectFileRepo.deleteByProjectId(projectId);
+        await this.projectRepo.delete(projectId);
+    }
+}
+exports.DeleteProject = DeleteProject;
 //# sourceMappingURL=project.use-cases.js.map

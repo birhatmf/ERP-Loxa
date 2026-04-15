@@ -16,9 +16,11 @@ export interface Transaction {
   vatAmount: number;
   type: 'income' | 'expense';
   paymentMethod: 'nakit' | 'havale' | 'kart';
+  status?: 'active' | 'cancelled';
   isInvoiced: boolean;
   description: string;
   createdBy: string;
+  relatedProjectId?: string;
   createdAt: string;
 }
 
@@ -38,6 +40,10 @@ export interface Material {
   currentStock: number;
   minStockLevel: number;
   isLowStock: boolean;
+  manualPrice?: number | null;
+  currentPrice?: number;
+  totalValue?: number;
+  lastPurchasedAt?: string;
 }
 
 export interface StockHistory {
@@ -46,12 +52,16 @@ export interface StockHistory {
   quantity: number;
   description: string;
   createdAt: string;
+  type?: 'IN' | 'OUT';
+  isCorrection?: boolean;
+  correctionReason?: string | null;
 }
 
 export interface Project {
   id: string;
   name: string;
   customerName: string;
+  description?: string;
   status: 'draft' | 'active' | 'in_progress' | 'completed' | 'cancelled';
   totalPrice: number;
   itemCount: number;
@@ -93,4 +103,30 @@ export interface InvoiceItem {
   unitPrice: number;
   vatRate: number;
   totalPrice: number;
+}
+
+export interface CheckFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
+}
+
+export interface Check {
+  id: string;
+  type: 'received' | 'given';
+  amount: number;
+  dueDate: string;
+  ownerName: string;
+  checkNumber: string;
+  bankName: string;
+  description: string;
+  status: 'pending' | 'paid' | 'bounced' | 'cancelled';
+  paidDate: string | null;
+  relatedProjectId?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  fileCount?: number;
 }

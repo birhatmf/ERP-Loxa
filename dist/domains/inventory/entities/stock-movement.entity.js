@@ -17,6 +17,9 @@ class StockMovement extends types_1.AggregateRoot {
     _description;
     _relatedProjectId;
     _date;
+    _isCorrection;
+    _correctionReason;
+    _correctedAt;
     constructor(props) {
         super(props.id, props.createdAt, props.updatedAt);
         this._materialId = props.materialId;
@@ -25,6 +28,9 @@ class StockMovement extends types_1.AggregateRoot {
         this._description = props.description;
         this._relatedProjectId = props.relatedProjectId;
         this._date = props.date;
+        this._isCorrection = props.isCorrection ?? false;
+        this._correctionReason = props.correctionReason ?? null;
+        this._correctedAt = props.correctedAt ?? null;
     }
     static create(params) {
         if (params.quantity <= 0) {
@@ -38,6 +44,9 @@ class StockMovement extends types_1.AggregateRoot {
             id: (0, types_1.generateId)(),
             ...params,
             date: params.date ?? now,
+            isCorrection: false,
+            correctionReason: null,
+            correctedAt: null,
             createdAt: now,
             updatedAt: now,
         });
@@ -54,8 +63,41 @@ class StockMovement extends types_1.AggregateRoot {
     get description() { return this._description; }
     get relatedProjectId() { return this._relatedProjectId; }
     get date() { return this._date; }
+    get isCorrection() { return this._isCorrection; }
+    get correctionReason() { return this._correctionReason; }
+    get correctedAt() { return this._correctedAt; }
     get isIn() { return this._type === inventory_enums_1.StockMovementType.IN; }
     get isOut() { return this._type === inventory_enums_1.StockMovementType.OUT; }
+    markAsCorrection(reason) {
+        this._isCorrection = true;
+        this._correctionReason = reason;
+        this._correctedAt = new Date();
+        this.touch();
+    }
+    updateDetails(params) {
+        if (params.materialId !== undefined) {
+            if (!params.materialId.trim()) {
+                throw new types_1.BusinessRuleViolationError('Material ID is required');
+            }
+            this._materialId = params.materialId;
+        }
+        if (params.type !== undefined) {
+            this._type = params.type;
+        }
+        if (params.quantity !== undefined) {
+            if (params.quantity <= 0) {
+                throw new types_1.BusinessRuleViolationError('Stock movement quantity must be positive');
+            }
+            this._quantity = params.quantity;
+        }
+        if (params.description !== undefined) {
+            this._description = params.description;
+        }
+        if (params.date !== undefined) {
+            this._date = params.date;
+        }
+        this.touch();
+    }
 }
 exports.StockMovement = StockMovement;
 //# sourceMappingURL=stock-movement.entity.js.map

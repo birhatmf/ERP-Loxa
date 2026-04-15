@@ -69,6 +69,19 @@ export declare class Transaction extends AggregateRoot {
      * Link this transaction to a project.
      */
     linkToProject(projectId: string): void;
+    /**
+     * Update editable transaction details.
+     * RULE: Amount must remain positive and cancelled transactions cannot be edited.
+     */
+    updateDetails(params: {
+        amount?: Money;
+        vatAmount?: Money;
+        type?: TransactionType;
+        paymentMethod?: PaymentMethod;
+        isInvoiced?: boolean;
+        description?: string;
+        relatedProjectId?: string | null;
+    }): void;
 }
 export {};
 //# sourceMappingURL=transaction.entity.d.ts.map

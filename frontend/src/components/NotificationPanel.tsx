@@ -16,31 +16,48 @@ export default function NotificationPanel() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const checkAlerts = async () => {
-    const notifs: Notification[] = [];
     try {
-      const [lowStock, invoices, checks] = await Promise.all([
+      const [stored, lowStock, invoices, checks] = await Promise.all([
+        api.get('/api/notifications').then(r => r.data).catch(() => []),
         api.get('/api/inventory/materials/low-stock').then(r => r.data).catch(() => []),
         api.get('/api/invoices').then(r => r.data).catch(() => []),
         api.get('/api/payment/checks').then(r => r.data).catch(() => []),
       ]);
 
+      const notifs: Notification[] = [
+        ...stored.map((n: any) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          time: n.createdAt,
+          read: Boolean(n.read),
+        })),
+      ];
+
+      const existingIds = new Set(notifs.map(n => n.id));
+
       lowStock.forEach((m: any) => {
-        notifs.push({
-          id: `stock-${m.id}`,
-          type: 'low_stock',
-          title: 'Düşük Stok Uyarısı',
-          message: `${m.name} — ${m.currentStock} ${m.unit} (min: ${m.minStockLevel})`,
-          time: new Date().toISOString(),
-          read: false,
-        });
+        const id = `low-stock-${m.id}`;
+        if (!existingIds.has(id)) {
+          notifs.push({
+            id,
+            type: 'low_stock',
+            title: 'Kritik Stok Uyarısı',
+            message: `${m.name} — ${m.currentStock} ${m.unit} (min: ${m.minStockLevel})`,
+            time: new Date().toISOString(),
+            read: false,
+          });
+        }
       });
 
       invoices.filter((i: any) => i.status === 'pending').forEach((i: any) => {
         const due = new Date(i.dueDate);
         const daysLeft = Math.ceil((due.getTime() - Date.now()) / 86400000);
-        if (daysLeft <= 7) {
+        const id = `invoice-${i.id}`;
+        if (!existingIds.has(id)) {
           notifs.push({
-            id: `invoice-${i.id}`,
+            id,
             type: 'pending_invoice',
             title: daysLeft <= 0 ? 'Vadesi Geçmiş Fatura' : 'Vadesi Yaklaşan Fatura',
             message: `${i.invoiceNumber} — ${daysLeft <= 0 ? 'Gecikmiş' : `${daysLeft} gün kaldı`}`,
@@ -53,9 +70,10 @@ export default function NotificationPanel() {
       checks.filter((c: any) => c.status === 'pending').forEach((c: any) => {
         const due = new Date(c.dueDate);
         const daysLeft = Math.ceil((due.getTime() - Date.now()) / 86400000);
-        if (daysLeft <= 7) {
+        const id = `check-${c.id}`;
+        if (!existingIds.has(id)) {
           notifs.push({
-            id: `check-${c.id}`,
+            id,
             type: 'overdue_check',
             title: 'Vadesi Yaklaşan Çek',
             message: `${c.checkNumber || 'Çek'} — ${c.ownerName} — ${daysLeft <= 0 ? 'Vadesi geçmiş' : `${daysLeft} gün kaldı`}`,
@@ -64,8 +82,10 @@ export default function NotificationPanel() {
           });
         }
       });
+
+      notifs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setNotifications(notifs);
     } catch {}
-    setNotifications(notifs);
   };
 
   useEffect(() => {
@@ -75,6 +95,13 @@ export default function NotificationPanel() {
   }, []);
 
   const unread = notifications.filter(n => !n.read).length;
+
+  const markAsRead = async (id: string) => {
+    setNotifications(prev => prev.map(x => x.id === id ? { ...x, read: true } : x));
+    try {
+      await api.patch(`/api/notifications/${id}/read`);
+    } catch {}
+  };
 
   const iconMap: Record<string, React.ReactNode> = {
     low_stock: <Package size={14} className="text-red-500" />,
@@ -90,6 +117,7 @@ export default function NotificationPanel() {
         className="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <Bell size={20} />
+        {unread > 0 && <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />}
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
             {unread > 9 ? '9+' : unread}
@@ -118,7 +146,7 @@ export default function NotificationPanel() {
                     </div>
                     {!n.read && (
                       <button
-                        onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
+                        onClick={() => markAsRead(n.id)}
                         className="mt-0.5 text-gray-300 hover:text-gray-500"
                       >
                         <Check size={14} />

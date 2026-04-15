@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { CreateTransaction } from '@application/use-cases/finance/create-transaction.use-case';
+import { CreateTransaction, UpdateTransaction, CancelTransaction } from '@application/use-cases/finance/create-transaction.use-case';
 import { TransactionType, PaymentMethod } from '@domains/finance';
 import { CashService } from '@domains/finance';
 import { ITransactionRepository } from '@domains/finance';
@@ -7,6 +7,8 @@ import { logger } from '@shared/logger';
 
 export function createFinanceRoutes(
   createTransaction: CreateTransaction,
+  updateTransaction: UpdateTransaction,
+  cancelTransaction: CancelTransaction,
   cashService: CashService,
   transactionRepo: ITransactionRepository
 ): Router {
@@ -56,6 +58,9 @@ export function createFinanceRoutes(
         paymentMethod: t.paymentMethod,
         status: t.status,
         description: t.description,
+        isInvoiced: t.isInvoiced,
+        createdBy: t.createdBy,
+        relatedProjectId: t.relatedProjectId,
         createdAt: t.createdAt,
       })));
     } catch (error: any) {
@@ -82,6 +87,56 @@ export function createFinanceRoutes(
     } catch (error: any) {
       logger.error('Failed to get cash balance', { error: error.message });
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.patch('/transactions/:id', async (req: Request, res: Response) => {
+    try {
+      const transaction = await updateTransaction.execute({
+        transactionId: req.params.id,
+        amount: req.body.amount !== undefined ? Number(req.body.amount) : undefined,
+        vatAmount: req.body.vatAmount !== undefined ? Number(req.body.vatAmount) : undefined,
+        type: req.body.type as TransactionType | undefined,
+        paymentMethod: req.body.paymentMethod as PaymentMethod | undefined,
+        isInvoiced: req.body.isInvoiced,
+        description: req.body.description,
+        relatedProjectId: req.body.relatedProjectId ?? undefined,
+      });
+
+      res.json({
+        id: transaction.id,
+        amount: transaction.amount.amount,
+        vatAmount: transaction.vatAmount.amount,
+        type: transaction.type,
+        paymentMethod: transaction.paymentMethod,
+        status: transaction.status,
+        description: transaction.description,
+        isInvoiced: transaction.isInvoiced,
+        createdBy: transaction.createdBy,
+        relatedProjectId: transaction.relatedProjectId,
+        createdAt: transaction.createdAt,
+      });
+    } catch (error: any) {
+      logger.error('Failed to update transaction', { error: error.message, id: req.params.id, body: req.body });
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  router.delete('/transactions/:id', async (req: Request, res: Response) => {
+    try {
+      const transaction = await cancelTransaction.execute({
+        transactionId: req.params.id,
+        reason: req.body?.reason || 'Deleted from UI',
+      });
+
+      res.json({
+        id: transaction.id,
+        status: transaction.status,
+        cancellationReason: transaction.cancellationReason,
+      });
+    } catch (error: any) {
+      logger.error('Failed to cancel transaction', { error: error.message, id: req.params.id });
+      res.status(400).json({ error: error.message });
     }
   });
 

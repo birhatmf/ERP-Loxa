@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
-import { Plus, Landmark, X, Check, AlertTriangle } from 'lucide-react';
+import { Plus, Landmark, X, Check, AlertTriangle, Paperclip } from 'lucide-react';
+import DropZone from '../components/DropZone';
 
 interface Check {
   id: string;
@@ -11,9 +12,19 @@ interface Check {
   checkNumber: string;
   bankName: string;
   description: string;
-  status: 'pending' | 'paid' | 'returned' | 'cancelled';
+  status: 'pending' | 'paid' | 'bounced' | 'cancelled';
   paidDate: string;
   createdAt: string;
+  fileCount?: number;
+}
+
+interface CheckFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
 }
 
 const TYPE_MAP: Record<string, { label: string; class: string }> = {
@@ -24,7 +35,7 @@ const TYPE_MAP: Record<string, { label: string; class: string }> = {
 const STATUS_MAP: Record<string, { label: string; class: string }> = {
   pending: { label: 'Bekliyor', class: 'badge-yellow' },
   paid: { label: 'Tahsil Edildi', class: 'badge-green' },
-  returned: { label: 'Karşılıksız', class: 'badge-red' },
+  bounced: { label: 'Karşılıksız', class: 'badge-red' },
   cancelled: { label: 'İptal', class: 'badge-gray' },
 };
 
@@ -32,7 +43,10 @@ export default function ChecksPage() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showFiles, setShowFiles] = useState<Check | null>(null);
+  const [files, setFiles] = useState<CheckFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [fileUploading, setFileUploading] = useState(false);
   const [form, setForm] = useState({
     type: 'received', amount: '', dueDate: '', ownerName: '',
     checkNumber: '', bankName: '', description: '',
@@ -47,6 +61,20 @@ export default function ChecksPage() {
   };
 
   useEffect(() => { fetchChecks(); }, []);
+
+  useEffect(() => {
+    const loadFiles = async () => {
+      if (!showFiles) return;
+      try {
+        const { data } = await api.get(`/api/payment/checks/${showFiles.id}/files`);
+        setFiles(data);
+      } catch {
+        setFiles([]);
+      }
+    };
+
+    loadFiles();
+  }, [showFiles]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,8 +110,48 @@ export default function ChecksPage() {
       await api.patch(`/api/payment/checks/${id}/status`, { status });
       fetchChecks();
     } catch {
-      setChecks(prev => prev.map(c => c.id === id ? { ...c, status: status as any, paidDate: status === 'paid' ? new Date().toISOString() : '' } : c));
+      setChecks(prev => prev.map(c => c.id === id ? { ...c, status: status === 'paid' ? 'paid' : status === 'cancelled' ? 'cancelled' : 'bounced', paidDate: status === 'paid' ? new Date().toISOString() : '' } : c));
     }
+  };
+
+  const handleFilesSelected = async (selectedFiles: File[]) => {
+    if (!showFiles) return;
+    setFileUploading(true);
+    try {
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const { data } = await api.post(`/api/payment/checks/${showFiles.id}/files`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setFiles(prev => [data, ...prev]);
+      }
+    } finally {
+      setFileUploading(false);
+    }
+  };
+
+  const handleOpenFile = async (file: CheckFile) => {
+    if (!showFiles) return;
+    try {
+      const response = await api.get(file.url, { responseType: 'blob' });
+      const blob = new Blob([response.data], {
+        type: response.headers?.['content-type'] || file.type || 'application/octet-stream',
+      });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch {
+      window.open(file.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleRemoveFile = async (fileId: string) => {
+    if (!showFiles) return;
+    try {
+      await api.delete(`/api/payment/checks/${showFiles.id}/files/${fileId}`);
+      setFiles(prev => prev.filter(f => f.id !== fileId));
+    } catch {}
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
@@ -159,13 +227,14 @@ export default function ChecksPage() {
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Banka</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Vade</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Durum</th>
+                <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Evrak</th>
                 <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Tutar</th>
                 <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {checks.length === 0 ? (
-                <tr><td colSpan={8} className="text-center text-sm text-gray-500 py-8">
+                <tr><td colSpan={9} className="text-center text-sm text-gray-500 py-8">
                   <Landmark size={32} className="mx-auto text-gray-300 mb-3" />
                   Henüz çek kaydı yok
                 </td></tr>
@@ -189,6 +258,14 @@ export default function ChecksPage() {
                       <td className="px-5 py-3.5">
                         <span className={`badge ${STATUS_MAP[c.status]?.class}`}>{STATUS_MAP[c.status]?.label}</span>
                       </td>
+                      <td className="px-5 py-3.5">
+                        <button
+                          onClick={() => setShowFiles(c)}
+                          className="btn btn-secondary !px-2 !py-1 text-[10px]"
+                        >
+                          <Paperclip size={12} /> {c.fileCount ? `${c.fileCount}` : 'Yükle'}
+                        </button>
+                      </td>
                       <td className="px-5 py-3.5 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">{formatCurrency(c.amount)}</td>
                       <td className="px-5 py-3.5 text-right">
                         {c.status === 'pending' && (
@@ -196,7 +273,7 @@ export default function ChecksPage() {
                             <button onClick={() => handleStatusChange(c.id, 'paid')} className="btn btn-success !px-2 !py-1 text-[10px]">
                               <Check size={12} /> Tahsil
                             </button>
-                            <button onClick={() => handleStatusChange(c.id, 'returned')} className="btn btn-danger !px-2 !py-1 text-[10px]">
+                            <button onClick={() => handleStatusChange(c.id, 'bounced')} className="btn btn-danger !px-2 !py-1 text-[10px]">
                               İade
                             </button>
                           </div>
@@ -262,6 +339,48 @@ export default function ChecksPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showFiles && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-xl p-6 max-h-[85vh] overflow-auto">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Çek Evrakları</h3>
+                <p className="text-sm text-gray-500">{showFiles.checkNumber || showFiles.ownerName}</p>
+              </div>
+              <button onClick={() => setShowFiles(null)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                <DropZone
+                  onFilesSelected={handleFilesSelected}
+                  accept="image/*"
+                  multiple={true}
+                  maxSize={10}
+                  existingFiles={files}
+                  onOpenFile={handleOpenFile}
+                  onRemoveFile={handleRemoveFile}
+                />
+                {fileUploading && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+                    Görüntü yükleniyor...
+                  </div>
+                )}
+              </div>
+
+              {files.length === 0 && (
+                <div className="rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-500">
+                  Henüz eklenmiş çek görseli yok.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

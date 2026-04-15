@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, X, File, Image, FileText } from 'lucide-react';
+import { Upload, X, File, Image, FileText, Eye } from 'lucide-react';
 
 interface UploadedFile {
   id: string;
@@ -17,6 +17,7 @@ interface DropZoneProps {
   maxSize?: number; // MB
   existingFiles?: UploadedFile[];
   onRemoveFile?: (id: string) => void;
+  onOpenFile?: (file: UploadedFile) => void;
 }
 
 export default function DropZone({
@@ -26,6 +27,7 @@ export default function DropZone({
   maxSize = 10,
   existingFiles = [],
   onRemoveFile,
+  onOpenFile,
 }: DropZoneProps) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
@@ -101,8 +103,23 @@ export default function DropZone({
                 <p className="text-sm font-medium text-gray-900 truncate">{f.name}</p>
                 <p className="text-xs text-gray-400">{formatSize(f.size)}</p>
               </div>
+              {onOpenFile && (
+                <button
+                  type="button"
+                  onClick={() => onOpenFile(f)}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+                >
+                  <Eye size={14} /> Görüntüle
+                </button>
+              )}
               {onRemoveFile && (
-                <button onClick={() => onRemoveFile(f.id)} className="text-gray-400 hover:text-red-500"><X size={14} /></button>
+                <button
+                  type="button"
+                  onClick={() => onRemoveFile(f.id)}
+                  className="text-gray-400 hover:text-red-500"
+                >
+                  <X size={14} />
+                </button>
               )}
             </div>
           ))}

@@ -101,6 +101,43 @@ class Transaction extends types_1.AggregateRoot {
         this._relatedProjectId = projectId;
         this.touch();
     }
+    /**
+     * Update editable transaction details.
+     * RULE: Amount must remain positive and cancelled transactions cannot be edited.
+     */
+    updateDetails(params) {
+        if (this._status === transaction_enums_1.TransactionStatus.CANCELLED) {
+            throw new types_1.BusinessRuleViolationError('Cancelled transactions cannot be edited');
+        }
+        if (params.amount !== undefined) {
+            if (params.amount.isZero() || params.amount.isNegative()) {
+                throw new types_1.BusinessRuleViolationError('Transaction amount must be positive');
+            }
+            this._amount = params.amount;
+        }
+        if (params.vatAmount !== undefined) {
+            if (params.vatAmount.isNegative()) {
+                throw new types_1.BusinessRuleViolationError('VAT amount cannot be negative');
+            }
+            this._vatAmount = params.vatAmount;
+        }
+        if (params.type !== undefined) {
+            this._type = params.type;
+        }
+        if (params.paymentMethod !== undefined) {
+            this._paymentMethod = params.paymentMethod;
+        }
+        if (params.isInvoiced !== undefined) {
+            this._isInvoiced = params.isInvoiced;
+        }
+        if (params.description !== undefined) {
+            this._description = params.description;
+        }
+        if (params.relatedProjectId !== undefined) {
+            this._relatedProjectId = params.relatedProjectId ?? undefined;
+        }
+        this.touch();
+    }
 }
 exports.Transaction = Transaction;
 //# sourceMappingURL=transaction.entity.js.map

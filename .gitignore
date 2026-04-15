@@ -1,6 +1,5 @@
 node_modules/
 
-
 *.db
 .env
 .env.local
@@ -8,3 +7,5 @@ node_modules/
 *.log
 .DS_Store
 coverage/
+data/project-files/
+data/check-files/

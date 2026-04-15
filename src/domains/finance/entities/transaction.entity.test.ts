@@ -128,4 +128,48 @@ describe('Transaction Entity', () => {
     expect(tx.domainEvents).toHaveLength(1);
     expect(tx.domainEvents[0].eventName).toBe('TransactionCancelled');
   });
+
+  it('should update editable details on active transaction', () => {
+    const tx = Transaction.create({
+      amount: Money.create(1000),
+      vatAmount: Money.create(180),
+      type: TransactionType.INCOME,
+      paymentMethod: PaymentMethod.CASH,
+      isInvoiced: false,
+      description: 'Test',
+      createdBy: 'test',
+    });
+
+    tx.updateDetails({
+      amount: Money.create(1500),
+      vatAmount: Money.create(270),
+      type: TransactionType.EXPENSE,
+      paymentMethod: PaymentMethod.TRANSFER,
+      isInvoiced: true,
+      description: 'Updated',
+    });
+
+    expect(tx.amount.amount).toBe(1500);
+    expect(tx.vatAmount.amount).toBe(270);
+    expect(tx.type).toBe(TransactionType.EXPENSE);
+    expect(tx.paymentMethod).toBe(PaymentMethod.TRANSFER);
+    expect(tx.isInvoiced).toBe(true);
+    expect(tx.description).toBe('Updated');
+  });
+
+  it('should not edit cancelled transaction', () => {
+    const tx = Transaction.create({
+      amount: Money.create(1000),
+      vatAmount: Money.create(180),
+      type: TransactionType.INCOME,
+      paymentMethod: PaymentMethod.CASH,
+      isInvoiced: false,
+      description: 'Test',
+      createdBy: 'test',
+    });
+
+    tx.cancel('remove');
+
+    expect(() => tx.updateDetails({ description: 'X' })).toThrow('Cancelled transactions cannot be edited');
+  });
 });

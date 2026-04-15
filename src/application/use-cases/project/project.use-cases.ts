@@ -1,6 +1,6 @@
 import { Money, EventBus, InsufficientStockError } from '@shared/types';
 import { Project, ProjectStatus } from '@domains/project';
-import { IProjectRepository } from '@domains/project';
+import { IProjectFileRepository, IProjectRepository } from '@domains/project';
 import { StockService } from '@domains/inventory';
 
 /**
@@ -122,5 +122,63 @@ export class UpdateProjectStatus {
     project.clearEvents();
 
     return project;
+  }
+}
+
+/**
+ * UpdateProjectInfo Use Case
+ * Updates editable project fields without changing lifecycle state.
+ */
+export class UpdateProjectInfo {
+  constructor(private projectRepo: IProjectRepository, private eventBus: EventBus) {}
+
+  async execute(params: {
+    projectId: string;
+    name?: string;
+    customerName?: string;
+    description?: string;
+    totalPrice?: number;
+    currency?: string;
+  }): Promise<Project> {
+    const project = await this.projectRepo.findById(params.projectId);
+    if (!project) {
+      throw new Error(`Project not found: ${params.projectId}`);
+    }
+
+    project.updateInfo({
+      name: params.name,
+      customerName: params.customerName,
+      description: params.description,
+      totalPrice: params.totalPrice !== undefined
+        ? Money.create(params.totalPrice, params.currency)
+        : undefined,
+    });
+
+    await this.projectRepo.save(project);
+    await this.eventBus.publishAll(project.domainEvents);
+    project.clearEvents();
+
+    return project;
+  }
+}
+
+/**
+ * DeleteProject Use Case
+ * Removes a project and its items.
+ */
+export class DeleteProject {
+  constructor(
+    private projectRepo: IProjectRepository,
+    private projectFileRepo: IProjectFileRepository
+  ) {}
+
+  async execute(projectId: string): Promise<void> {
+    const project = await this.projectRepo.findById(projectId);
+    if (!project) {
+      throw new Error(`Project not found: ${projectId}`);
+    }
+
+    await this.projectFileRepo.deleteByProjectId(projectId);
+    await this.projectRepo.delete(projectId);
   }
 }

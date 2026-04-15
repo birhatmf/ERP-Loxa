@@ -8,6 +8,9 @@ interface StockMovementProps {
     description: string;
     relatedProjectId?: string;
     date: Date;
+    isCorrection?: boolean;
+    correctionReason?: string | null;
+    correctedAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,6 +27,9 @@ export declare class StockMovement extends AggregateRoot {
     private _description;
     private _relatedProjectId?;
     private _date;
+    private _isCorrection;
+    private _correctionReason;
+    private _correctedAt;
     private constructor();
     static create(params: {
         materialId: string;
@@ -40,8 +46,19 @@ export declare class StockMovement extends AggregateRoot {
     get description(): string;
     get relatedProjectId(): string | undefined;
     get date(): Date;
+    get isCorrection(): boolean;
+    get correctionReason(): string | null;
+    get correctedAt(): Date | null;
     get isIn(): boolean;
     get isOut(): boolean;
+    markAsCorrection(reason: string): void;
+    updateDetails(params: {
+        materialId?: string;
+        type?: StockMovementType;
+        quantity?: number;
+        description?: string;
+        date?: Date;
+    }): void;
 }
 export {};
 //# sourceMappingURL=stock-movement.entity.d.ts.map
