@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import type { Material } from '../types';
-import { Plus, ShoppingCart, X, Printer, Check, CreditCard, Banknote, FileText } from 'lucide-react';
+import { Plus, ShoppingCart, X, Printer, Check, Pencil, Trash2 } from 'lucide-react';
 
 interface Sale {
   id: string;
@@ -36,6 +36,8 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showReceipt, setShowReceipt] = useState<Sale | null>(null);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [editForm, setEditForm] = useState({ paymentMethod: 'nakit', paymentStatus: 'bekliyor', paymentNote: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     customerName: '',
@@ -190,6 +192,31 @@ export default function SalesPage() {
     printWindow.print();
   };
 
+  const openEdit = async (sale: Sale) => {
+    setEditingSale(sale);
+    setEditForm({
+      paymentMethod: sale.paymentMethod,
+      paymentStatus: sale.paymentStatus,
+      paymentNote: sale.paymentNote,
+      description: sale.description,
+    });
+  };
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSale) return;
+    await api.patch(`/api/sales/${editingSale.id}`, editForm);
+    setEditingSale(null);
+    fetchSales();
+  };
+
+  const deleteSale = async (id: string) => {
+    if (!window.confirm('Bu satış kaydını silmek istiyor musun?')) return;
+    await api.delete(`/api/sales/${id}`);
+    setSales(prev => prev.filter(s => s.id !== id));
+    if (showReceipt?.id === id) setShowReceipt(null);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" /></div>;
   }
@@ -244,9 +271,17 @@ export default function SalesPage() {
                     </td>
                     <td className="px-5 py-3.5 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">{formatCurrency(s.totalAmount)}</td>
                     <td className="px-5 py-3.5 text-right">
-                      <button onClick={() => setShowReceipt(s)} className="btn btn-secondary !px-3 !py-1.5 text-xs">
-                        <Printer size={14} /> Fiş
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => openEdit(s)} className="rounded p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50" title="Düzenle">
+                          <Pencil size={14} />
+                        </button>
+                        <button onClick={() => deleteSale(s.id)} className="rounded p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50" title="Sil">
+                          <Trash2 size={14} />
+                        </button>
+                        <button onClick={() => setShowReceipt(s)} className="btn btn-secondary !px-3 !py-1.5 text-xs">
+                          <Printer size={14} /> Fiş
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -411,6 +446,49 @@ export default function SalesPage() {
             <button onClick={() => handlePrint(showReceipt)} className="btn btn-primary w-full mt-4">
               <Printer size={16} /> Yazdır
             </button>
+          </div>
+        </div>
+      )}
+
+      {editingSale && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-semibold text-gray-900">Satış Düzenle</h3>
+              <button onClick={() => setEditingSale(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={saveEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ödeme Yöntemi</label>
+                <select className="select" value={editForm.paymentMethod} onChange={e => setEditForm({...editForm, paymentMethod: e.target.value})}>
+                  <option value="nakit">Nakit</option>
+                  <option value="kart">Kredi Kartı</option>
+                  <option value="havale">Havale/EFT</option>
+                  <option value="cek">Çek</option>
+                  <option value="acik_hesap">Açık Hesap</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ödeme Durumu</label>
+                <select className="select" value={editForm.paymentStatus} onChange={e => setEditForm({...editForm, paymentStatus: e.target.value})}>
+                  <option value="bekliyor">Bekliyor</option>
+                  <option value="kısmi">Kısmi Ödeme Alındı</option>
+                  <option value="ödendi">Tam Ödendi</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                <textarea className="input min-h-[80px]" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ödeme Notu</label>
+                <textarea className="input min-h-[80px]" value={editForm.paymentNote} onChange={e => setEditForm({...editForm, paymentNote: e.target.value})} />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingSale(null)} className="btn btn-secondary flex-1">İptal</button>
+                <button type="submit" className="btn btn-primary flex-1">Kaydet</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

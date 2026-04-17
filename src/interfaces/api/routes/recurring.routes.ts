@@ -81,12 +81,39 @@ export function createRecurringRoutes(
       const item = await recurringRepo.findById(req.params.id);
       if (!item) return res.status(404).json({ error: 'Recurring transaction not found' });
 
-      item.setActive(Boolean(req.body.isActive));
+      const hasEditableFields = ['description', 'amount', 'type', 'category', 'paymentMethod', 'frequency', 'dayOfMonth']
+        .some((key) => req.body[key] !== undefined);
+
+      if (hasEditableFields) {
+        item.updateInfo({
+          description: req.body.description !== undefined ? String(req.body.description) : undefined,
+          amount: req.body.amount !== undefined ? Number(req.body.amount) : undefined,
+          type: req.body.type !== undefined ? (req.body.type as TransactionType) : undefined,
+          category: req.body.category !== undefined ? String(req.body.category) : undefined,
+          paymentMethod: req.body.paymentMethod !== undefined ? String(req.body.paymentMethod) : undefined,
+          frequency: req.body.frequency !== undefined ? (req.body.frequency as RecurringFrequency) : undefined,
+          dayOfMonth: req.body.dayOfMonth !== undefined ? Number(req.body.dayOfMonth) : undefined,
+          isActive: req.body.isActive !== undefined ? Boolean(req.body.isActive) : undefined,
+        });
+      } else {
+        item.setActive(Boolean(req.body.isActive));
+      }
+
       await recurringRepo.save(item);
 
       res.json({
         id: item.id,
+        description: item.description,
+        amount: item.amount.amount,
+        type: item.type,
+        category: item.category,
+        paymentMethod: item.paymentMethod,
+        frequency: item.frequency,
+        dayOfMonth: item.dayOfMonth,
         isActive: item.isActive,
+        nextRun: item.nextRun,
+        lastRun: item.lastRun,
+        createdAt: item.createdAt,
       });
     } catch (error: any) {
       logger.error('Failed to update recurring transaction', { error: error.message, id: req.params.id });
@@ -138,4 +165,3 @@ export function createRecurringRoutes(
 
   return router;
 }
-

@@ -228,6 +228,35 @@ export class Invoice extends AggregateRoot {
     );
   }
 
+  updateInfo(params: {
+    customerName?: string;
+    customerAddress?: string;
+    dueDate?: Date;
+    notes?: string;
+  }): void {
+    if (params.customerName !== undefined) {
+      const value = params.customerName.trim();
+      if (!value) {
+        throw new BusinessRuleViolationError('Customer name is required');
+      }
+      this._customerName = value;
+    }
+
+    if (params.customerAddress !== undefined) {
+      this._customerAddress = params.customerAddress;
+    }
+
+    if (params.dueDate !== undefined) {
+      this._dueDate = params.dueDate;
+    }
+
+    if (params.notes !== undefined) {
+      this._notes = params.notes;
+    }
+
+    this.touch();
+  }
+
   /**
    * Cancel the invoice.
    */

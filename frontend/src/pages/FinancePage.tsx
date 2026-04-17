@@ -35,7 +35,7 @@ export default function FinancePage() {
       api.get('/api/finance/transactions'),
       api.get('/api/finance/cash/balance'),
     ]);
-    setTransactions(txRes.data);
+    setTransactions(txRes.data.filter((tx: Transaction) => tx.status !== 'cancelled'));
     setBalance(balRes.data);
     setLoading(false);
   };
@@ -100,7 +100,7 @@ export default function FinancePage() {
     setSubmitting(true);
     try {
       const { data } = await api.delete(`/api/finance/transactions/${tx.id}`);
-      setTransactions(prev => prev.map(item => item.id === tx.id ? { ...item, ...data } : item));
+      setTransactions(prev => prev.filter(item => item.id !== tx.id));
       fetchData();
     } finally {
       setSubmitting(false);

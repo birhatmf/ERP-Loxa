@@ -103,6 +103,13 @@ export default function NotificationPanel() {
     } catch {}
   };
 
+  const markAllAsRead = async () => {
+    setNotifications(prev => prev.map(x => ({ ...x, read: true })));
+    try {
+      await api.patch('/api/notifications/read-all');
+    } catch {}
+  };
+
   const iconMap: Record<string, React.ReactNode> = {
     low_stock: <Package size={14} className="text-red-500" />,
     pending_invoice: <FileText size={14} className="text-amber-500" />,
@@ -131,7 +138,14 @@ export default function NotificationPanel() {
           <div className="absolute right-0 top-full mt-2 w-80 card shadow-xl z-50">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h3 className="font-semibold text-sm text-gray-900">Bildirimler</h3>
-              {unread > 0 && <span className="badge badge-red text-[10px]">{unread} yeni</span>}
+              <div className="flex items-center gap-2">
+                {unread > 0 && <span className="badge badge-red text-[10px]">{unread} yeni</span>}
+                {unread > 0 && (
+                  <button onClick={markAllAsRead} className="text-xs font-medium text-brand-600 hover:text-brand-700">
+                    Tümünü okundu yap
+                  </button>
+                )}
+              </div>
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (

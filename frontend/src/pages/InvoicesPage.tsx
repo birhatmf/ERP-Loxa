@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import type { Invoice } from '../types';
-import { Plus, FileText, X, Check } from 'lucide-react';
+import { Plus, FileText, X, Check, Pencil, Trash2 } from 'lucide-react';
 
 const STATUS_MAP: Record<string, { label: string; class: string }> = {
   pending: { label: 'Bekliyor', class: 'badge-yellow' },
@@ -15,6 +15,8 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [editForm, setEditForm] = useState({ customerName: '', customerAddress: '', dueDate: '', notes: '' });
   const [form, setForm] = useState({
     projectId: '', customerId: '', dueDate: '',
     items: [{ description: '', quantity: '1', unitPrice: '', vatRate: '18' }],
@@ -57,6 +59,36 @@ export default function InvoicesPage() {
       const { data } = await api.get(`/api/invoices/${id}`);
       setSelectedInvoice(data);
     }
+  };
+
+  const openEdit = async (id: string) => {
+    const { data } = await api.get(`/api/invoices/${id}`);
+    setEditingInvoice(data);
+    setEditForm({
+      customerName: data.customerName || '',
+      customerAddress: data.customerAddress || '',
+      dueDate: data.dueDate ? String(data.dueDate).slice(0, 10) : '',
+      notes: data.notes || '',
+    });
+  };
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInvoice) return;
+    await api.patch(`/api/invoices/${editingInvoice.id}`, editForm);
+    setEditingInvoice(null);
+    fetchInvoices();
+    if (selectedInvoice?.id === editingInvoice.id) {
+      const { data } = await api.get(`/api/invoices/${editingInvoice.id}`);
+      setSelectedInvoice(data);
+    }
+  };
+
+  const deleteInvoice = async (id: string) => {
+    if (!window.confirm('Bu faturayı silmek istiyor musun?')) return;
+    await api.delete(`/api/invoices/${id}`);
+    setInvoices(prev => prev.filter(inv => inv.id !== id));
+    if (selectedInvoice?.id === id) setSelectedInvoice(null);
   };
 
   const addItem = () => {
@@ -130,11 +162,19 @@ export default function InvoicesPage() {
                     <td className="px-5 py-4 text-sm text-gray-600 text-right">{formatCurrency(inv.vatAmount)}</td>
                     <td className="px-5 py-4 text-sm font-bold text-gray-900 text-right">{formatCurrency(inv.grandTotal)}</td>
                     <td className="px-5 py-4 text-right">
-                      {inv.status === 'pending' && (
-                        <button onClick={(e) => { e.stopPropagation(); handlePay(inv.id); }} className="btn btn-success !px-3 !py-1.5 text-xs">
-                          <Check size={12} /> Öde
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); openEdit(inv.id); }} className="rounded p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50" title="Düzenle">
+                          <Pencil size={14} />
                         </button>
-                      )}
+                        <button onClick={(e) => { e.stopPropagation(); deleteInvoice(inv.id); }} className="rounded p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50" title="Sil">
+                          <Trash2 size={14} />
+                        </button>
+                        {inv.status === 'pending' && (
+                          <button onClick={(e) => { e.stopPropagation(); handlePay(inv.id); }} className="btn btn-success !px-3 !py-1.5 text-xs">
+                            <Check size={12} /> Öde
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -198,7 +238,49 @@ export default function InvoicesPage() {
                   <Check size={16} /> Ödendi Olarak İşaretle
                 </button>
               )}
+              <div className="flex gap-2">
+                <button onClick={() => openEdit(selectedInvoice.id)} className="btn btn-secondary flex-1">
+                  <Pencil size={14} /> Düzenle
+                </button>
+                <button onClick={() => deleteInvoice(selectedInvoice.id)} className="btn btn-secondary flex-1 text-red-600 hover:text-red-700">
+                  <Trash2 size={14} /> Sil
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Invoice Modal */}
+      {editingInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-semibold text-gray-900">Fatura Düzenle</h3>
+              <button onClick={() => setEditingInvoice(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={saveEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Müşteri Adı</label>
+                <input className="input" value={editForm.customerName} onChange={e => setEditForm({...editForm, customerName: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Müşteri Adresi</label>
+                <input className="input" value={editForm.customerAddress} onChange={e => setEditForm({...editForm, customerAddress: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Vade Tarihi</label>
+                <input type="date" className="input" value={editForm.dueDate} onChange={e => setEditForm({...editForm, dueDate: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notlar</label>
+                <textarea className="input min-h-[80px]" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingInvoice(null)} className="btn btn-secondary flex-1">İptal</button>
+                <button type="submit" className="btn btn-primary flex-1">Kaydet</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

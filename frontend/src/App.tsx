@@ -19,7 +19,6 @@ import BudgetPage from './pages/BudgetPage';
 import RecurringPage from './pages/RecurringPage';
 import CategoriesPage from './pages/CategoriesPage';
 import TaxCalculatorPage from './pages/TaxCalculatorPage';
-import LotTrackingPage from './pages/LotTrackingPage';
 import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
@@ -37,7 +36,6 @@ export default function App() {
                   <Route path="/finance/recurring" element={<RecurringPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
                   <Route path="/inventory/stock-count" element={<StockCountPage />} />
-                  <Route path="/inventory/lot-tracking" element={<LotTrackingPage />} />
                   <Route path="/projects" element={<ProjectsPage />} />
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />
                   <Route path="/invoices" element={<InvoicesPage />} />

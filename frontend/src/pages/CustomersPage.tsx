@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
-import { Plus, Users, X, Phone, Mail, MapPin, ShoppingCart, FileText, History } from 'lucide-react';
+import { Plus, Users, X, Phone, Mail, MapPin, ShoppingCart, FileText, Pencil, Trash2 } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -16,10 +17,12 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', taxId: '', notes: '' });
 
@@ -39,23 +42,57 @@ export default function CustomersPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/api/customers', form);
+      if (editingCustomer) {
+        await api.patch(`/api/customers/${editingCustomer.id}`, form);
+      } else {
+        await api.post('/api/customers', form);
+      }
       setShowForm(false);
+      setEditingCustomer(null);
       setForm({ name: '', phone: '', email: '', address: '', taxId: '', notes: '' });
       fetchCustomers();
     } catch {
-      const newCustomer: Customer = {
-        id: Date.now().toString(),
-        ...form,
-        totalPurchases: 0,
-        outstandingBalance: 0,
-        createdAt: new Date().toISOString(),
-      };
-      setCustomers(prev => [newCustomer, ...prev]);
+      if (editingCustomer) {
+        setCustomers(prev => prev.map(customer =>
+          customer.id === editingCustomer.id ? { ...customer, ...form } : customer
+        ));
+      } else {
+        const newCustomer: Customer = {
+          id: Date.now().toString(),
+          ...form,
+          totalPurchases: 0,
+          outstandingBalance: 0,
+          createdAt: new Date().toISOString(),
+        };
+        setCustomers(prev => [newCustomer, ...prev]);
+      }
       setShowForm(false);
+      setEditingCustomer(null);
       setForm({ name: '', phone: '', email: '', address: '', taxId: '', notes: '' });
     }
     setSubmitting(false);
+  };
+
+  const startEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setForm({
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email,
+      address: customer.address,
+      taxId: customer.taxId,
+      notes: customer.notes,
+    });
+    setShowForm(true);
+  };
+
+  const deleteCustomer = async (id: string) => {
+    if (!window.confirm('Bu müşteriyi silmek istiyor musun?')) return;
+    try {
+      await api.delete(`/api/customers/${id}`);
+      fetchCustomers();
+      if (selectedCustomer?.id === id) setSelectedCustomer(null);
+    } catch {}
   };
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
@@ -72,7 +109,7 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold text-gray-900">Müşteriler (CRM)</h1>
           <p className="text-gray-500 text-sm mt-1">Müşteri kartları ve ilişki geçmişi</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary">
+        <button onClick={() => { setEditingCustomer(null); setForm({ name: '', phone: '', email: '', address: '', taxId: '', notes: '' }); setShowForm(true); }} className="btn btn-primary">
           <Plus size={16} /> Yeni Müşteri
         </button>
       </div>
@@ -86,7 +123,23 @@ export default function CustomersPage() {
           </div>
         ) : (
           customers.map(c => (
-            <div key={c.id} className="card p-5 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+            <div key={c.id} className="card relative p-5 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+              <div className="absolute right-3 top-3 flex gap-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); startEditCustomer(c); }}
+                  className="rounded-md p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50"
+                  title="Düzenle"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteCustomer(c.id); }}
+                  className="rounded-md p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                  title="Sil"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
               <div className="flex items-start gap-3 mb-4">
                 <div className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
                   <span className="text-brand-700 font-semibold text-sm">{c.name.charAt(0).toUpperCase()}</span>
@@ -204,10 +257,10 @@ export default function CustomersPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <button className="btn btn-secondary flex-1 text-sm">
+                <button onClick={() => navigate('/sales')} className="btn btn-secondary flex-1 text-sm">
                   <ShoppingCart size={14} /> Yeni Satış
                 </button>
-                <button className="btn btn-secondary flex-1 text-sm">
+                <button onClick={() => navigate('/invoices')} className="btn btn-secondary flex-1 text-sm">
                   <FileText size={14} /> Fatura Kes
                 </button>
               </div>
@@ -221,8 +274,8 @@ export default function CustomersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
           <div className="card w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-gray-900">Yeni Müşteri</h3>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              <h3 className="text-lg font-semibold text-gray-900">{editingCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri'}</h3>
+              <button onClick={() => { setShowForm(false); setEditingCustomer(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
@@ -252,7 +305,7 @@ export default function CustomersPage() {
                 <textarea className="input min-h-[60px]" placeholder="Müşteri ile ilgili notlar..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary flex-1">İptal</button>
+                <button type="button" onClick={() => { setShowForm(false); setEditingCustomer(null); }} className="btn btn-secondary flex-1">İptal</button>
                 <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
                   {submitting ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : 'Kaydet'}
                 </button>

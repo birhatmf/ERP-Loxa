@@ -147,5 +147,53 @@ export function createInvoiceRoutes(
     }
   });
 
+  // PATCH /invoices/:id - Update invoice
+  router.patch('/:id', async (req: Request, res: Response) => {
+    try {
+      const invoice = await invoiceRepo.findById(req.params.id);
+      if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+      const { customerName, customerAddress, dueDate, notes } = req.body;
+
+      invoice.updateInfo({
+        customerName: customerName !== undefined ? String(customerName) : undefined,
+        customerAddress: customerAddress !== undefined ? String(customerAddress) : undefined,
+        dueDate: dueDate !== undefined ? new Date(dueDate) : undefined,
+        notes: notes !== undefined ? String(notes) : undefined,
+      });
+      await invoiceRepo.save(invoice);
+
+      logger.info('Invoice updated', { id: invoice.id });
+      res.json({
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        customerName: invoice.customerName,
+        totalAmount: invoice.totalAmount.amount,
+        vatAmount: invoice.totalVat.amount,
+        grandTotal: invoice.totalAmount.amount + invoice.totalVat.amount,
+        status: invoice.status,
+        dueDate: invoice.dueDate,
+      });
+    } catch (error: any) {
+      logger.error('Failed to update invoice', { error: error.message, id: req.params.id });
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // DELETE /invoices/:id - Delete invoice
+  router.delete('/:id', async (req: Request, res: Response) => {
+    try {
+      const invoice = await invoiceRepo.findById(req.params.id);
+      if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+      await invoiceRepo.delete(req.params.id);
+      logger.info('Invoice deleted', { id: req.params.id });
+      res.status(204).send();
+    } catch (error: any) {
+      logger.error('Failed to delete invoice', { error: error.message, id: req.params.id });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return router;
 }

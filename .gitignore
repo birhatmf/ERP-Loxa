@@ -1,5 +1,5 @@
 node_modules/
-
+.codex
 *.db
 .env
 .env.local

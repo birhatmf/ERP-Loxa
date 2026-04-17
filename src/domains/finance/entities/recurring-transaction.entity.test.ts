@@ -45,5 +45,34 @@ describe('RecurringTransaction Entity', () => {
     expect(item.lastRun?.toISOString()).toBe('2026-04-15T10:00:00.000Z');
     expect(item.nextRun.getTime()).toBeGreaterThan(item.lastRun!.getTime());
   });
-});
 
+  it('updates editable fields and recalculates schedule', () => {
+    const item = RecurringTransaction.create({
+      description: 'Aylık bakım',
+      amount: 1000,
+      type: TransactionType.EXPENSE,
+      category: 'service',
+      paymentMethod: 'nakit',
+      frequency: RecurringFrequency.MONTHLY,
+      dayOfMonth: 10,
+    });
+
+    item.updateInfo({
+      description: 'Aylık bakım paketi',
+      amount: 1500,
+      category: 'maintenance',
+      paymentMethod: 'kart',
+      frequency: RecurringFrequency.QUARTERLY,
+      dayOfMonth: 15,
+      isActive: false,
+    });
+
+    expect(item.description).toBe('Aylık bakım paketi');
+    expect(item.amount.amount).toBe(1500);
+    expect(item.category).toBe('maintenance');
+    expect(item.paymentMethod).toBe('kart');
+    expect(item.frequency).toBe(RecurringFrequency.QUARTERLY);
+    expect(item.dayOfMonth).toBe(15);
+    expect(item.isActive).toBe(false);
+  });
+});

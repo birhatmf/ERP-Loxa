@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
-import { Plus, RefreshCw, X, Play, Pause, Trash2, Calendar } from 'lucide-react';
+import { Plus, RefreshCw, X, Play, Trash2, Pencil } from 'lucide-react';
 
 interface RecurringTransaction {
   id: string;
@@ -29,6 +29,7 @@ export default function RecurringPage() {
   const [items, setItems] = useState<RecurringTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<RecurringTransaction | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     description: '', amount: '', type: 'expense', category: '',
@@ -49,11 +50,16 @@ export default function RecurringPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/api/finance/recurring', { ...form, amount: parseFloat(form.amount), dayOfMonth: parseInt(form.dayOfMonth) });
+      const payload = { ...form, amount: parseFloat(form.amount), dayOfMonth: parseInt(form.dayOfMonth) };
+      if (editingItem) {
+        await api.patch(`/api/finance/recurring/${editingItem.id}`, payload);
+      } else {
+        await api.post('/api/finance/recurring', payload);
+      }
       fetchData();
     } catch {
-      setItems(prev => [{
-        id: Date.now().toString(),
+      const nextItem: RecurringTransaction = {
+        id: editingItem?.id ?? Date.now().toString(),
         description: form.description,
         amount: parseFloat(form.amount),
         type: form.type as 'income' | 'expense',
@@ -61,13 +67,15 @@ export default function RecurringPage() {
         paymentMethod: form.paymentMethod,
         frequency: form.frequency as 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly',
         dayOfMonth: parseInt(form.dayOfMonth),
-        isActive: true,
+        isActive: editingItem ? editingItem.isActive : true,
         nextRun: new Date().toISOString(),
-        lastRun: '',
-        createdAt: new Date().toISOString(),
-      }, ...prev]);
+        lastRun: editingItem?.lastRun || '',
+        createdAt: editingItem?.createdAt || new Date().toISOString(),
+      };
+      setItems(prev => editingItem ? prev.map(item => item.id === editingItem.id ? nextItem : item) : [nextItem, ...prev]);
     }
     setShowForm(false);
+    setEditingItem(null);
     setForm({ description: '', amount: '', type: 'expense', category: '', paymentMethod: 'nakit', frequency: 'monthly', dayOfMonth: '1' });
     setSubmitting(false);
   };
@@ -84,6 +92,20 @@ export default function RecurringPage() {
   const deleteItem = async (id: string) => {
     try { await api.delete(`/api/finance/recurring/${id}`); } catch {}
     setItems(prev => prev.filter(i => i.id !== id));
+  };
+
+  const openEdit = (item: RecurringTransaction) => {
+    setEditingItem(item);
+    setForm({
+      description: item.description,
+      amount: String(item.amount),
+      type: item.type,
+      category: item.category,
+      paymentMethod: item.paymentMethod,
+      frequency: item.frequency,
+      dayOfMonth: String(item.dayOfMonth),
+    });
+    setShowForm(true);
   };
 
   const runNow = async (id: string) => {
@@ -110,7 +132,7 @@ export default function RecurringPage() {
           <h1 className="text-2xl font-bold text-gray-900">Tekrarlayan İşlemler</h1>
           <p className="text-gray-500 text-sm mt-1">Otomatik yinelenen gelir ve giderler</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary">
+        <button onClick={() => { setEditingItem(null); setForm({ description: '', amount: '', type: 'expense', category: '', paymentMethod: 'nakit', frequency: 'monthly', dayOfMonth: '1' }); setShowForm(true); }} className="btn btn-primary">
           <Plus size={16} /> Yeni Tekrarlayan İşlem
         </button>
       </div>
@@ -170,6 +192,9 @@ export default function RecurringPage() {
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex gap-1 justify-end">
+                        <button onClick={() => openEdit(item)} className="p-1.5 rounded text-gray-400 hover:text-brand-600 hover:bg-brand-50" title="Düzenle">
+                          <Pencil size={14} />
+                        </button>
                         <button onClick={() => runNow(item.id)} className="p-1.5 rounded text-brand-600 hover:bg-brand-50" title="Şimdi Çalıştır">
                           <Play size={14} />
                         </button>
@@ -191,8 +216,8 @@ export default function RecurringPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
           <div className="card w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-gray-900">Yeni Tekrarlayan İşlem</h3>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              <h3 className="text-lg font-semibold text-gray-900">{editingItem ? 'Tekrarlayan İşlem Düzenle' : 'Yeni Tekrarlayan İşlem'}</h3>
+              <button onClick={() => { setShowForm(false); setEditingItem(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <input type="text" className="input" placeholder="Açıklayama (Örn: Aylık Kira) *" value={form.description} onChange={e => setForm({...form, description: e.target.value})} required />
@@ -246,7 +271,7 @@ export default function RecurringPage() {
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary flex-1">İptal</button>
+                <button type="button" onClick={() => { setShowForm(false); setEditingItem(null); }} className="btn btn-secondary flex-1">İptal</button>
                 <button type="submit" disabled={submitting} className="btn btn-primary flex-1">Kaydet</button>
               </div>
             </form>

@@ -23,7 +23,6 @@ import {
   RefreshCw,
   Tag,
   Calculator,
-  Hash,
   Settings,
 } from 'lucide-react';
 
@@ -50,7 +49,6 @@ const navSections = [
     items: [
       { to: '/inventory', label: 'Malzemeler', icon: Package },
       { to: '/inventory/stock-count', label: 'Stok Sayım', icon: ClipboardCheck },
-      { to: '/inventory/lot-tracking', label: 'Lot & Seri', icon: Hash },
       { to: '/suppliers', label: 'Tedarikçiler', icon: Truck },
     ],
   },

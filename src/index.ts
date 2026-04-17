@@ -25,6 +25,10 @@ import { SqliteUserRepository } from '@infrastructure/database/repositories/sqli
 import { SqliteRecurringTransactionRepository } from '@infrastructure/database/repositories/sqlite-recurring-transaction.repository';
 import { SqliteSupplierRepository } from '@infrastructure/database/repositories/sqlite-supplier.repository';
 import { SqlitePurchaseOrderRepository } from '@infrastructure/database/repositories/sqlite-purchase-order.repository';
+import { SqliteCustomerRepository } from '@infrastructure/database/repositories/sqlite-customer.repository';
+import { SqliteCategoryRepository } from '@infrastructure/database/repositories/sqlite-category.repository';
+import { SqliteBudgetRepository } from '@infrastructure/database/repositories/sqlite-budget.repository';
+import { SqliteSaleRepository } from '@infrastructure/database/repositories/sqlite-sale.repository';
 
 // Domain Services
 import { CashService } from '@domains/finance';
@@ -51,6 +55,10 @@ import { createRecurringRoutes } from '@interfaces/api/routes/recurring.routes';
 import { createNotificationRoutes } from '@interfaces/api/routes/notification.routes';
 import { createProcurementRoutes } from '@interfaces/api/routes/procurement.routes';
 import { createReportsRoutes } from '@interfaces/api/routes/reports.routes';
+import { createCustomerRoutes } from '@interfaces/api/routes/customer.routes';
+import { createCategoryRoutes } from '@interfaces/api/routes/category.routes';
+import { createBudgetRoutes } from '@interfaces/api/routes/budget.routes';
+import { createSalesRoutes } from '@interfaces/api/routes/sales.routes';
 import { authMiddleware } from '@interfaces/api/middleware/auth.middleware';
 import { createRequestLogger } from '@interfaces/api/middleware/request-logger.middleware';
 import { AuditService } from '@shared/audit/audit.service';
@@ -88,6 +96,10 @@ async function bootstrap() {
   const notificationRepo = new SqliteNotificationRepository(knex);
   const supplierRepo = new SqliteSupplierRepository(knex);
   const purchaseOrderRepo = new SqlitePurchaseOrderRepository(knex);
+  const customerRepo = new SqliteCustomerRepository(knex);
+  const categoryRepo = new SqliteCategoryRepository(knex);
+  const budgetRepo = new SqliteBudgetRepository(knex);
+  const saleRepo = new SqliteSaleRepository(knex);
 
   // Movement repo (inline implementation)
   const movementRepo = {
@@ -169,6 +181,10 @@ async function bootstrap() {
     eventBus
   ));
   app.use('/api/notifications', auth, createNotificationRoutes(notificationRepo));
+  app.use('/api/customers', auth, createCustomerRoutes(customerRepo));
+  app.use('/api/categories', auth, createCategoryRoutes(categoryRepo));
+  app.use('/api/budget', auth, createBudgetRoutes(budgetRepo));
+  app.use('/api/sales', auth, createSalesRoutes(saleRepo));
   app.use('/api', auth, createProcurementRoutes(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
   app.use('/api', auth, createReportsRoutes(transactionRepo, projectRepo, invoiceRepo, materialRepo));
 
