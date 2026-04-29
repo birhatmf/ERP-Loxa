@@ -24,6 +24,7 @@ import {
   Tag,
   Calculator,
   Settings,
+  HandCoins,
 } from 'lucide-react';
 
 const navSections = [
@@ -40,6 +41,7 @@ const navSections = [
       { to: '/finance/recurring', label: 'Tekrarlayan', icon: RefreshCw },
       { to: '/checks', label: 'Çekler', icon: Landmark },
       { to: '/budget', label: 'Bütçe', icon: Target },
+      { to: '/payroll', label: 'Maaş Avans', icon: HandCoins },
       { to: '/tax-calculator', label: 'Vergi Hesapla', icon: Calculator },
       { to: '/reports', label: 'Raporlar', icon: BarChart3 },
     ],

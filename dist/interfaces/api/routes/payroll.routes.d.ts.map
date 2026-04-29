@@ -1,0 +1,1 @@
+{"version":3,"file":"payroll.routes.d.ts","sourceRoot":"","sources":["../../../../src/interfaces/api/routes/payroll.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAqB,MAAM,EAAE,MAAM,SAAS,CAAC;AACpD,OAAO,EAAE,uBAAuB,EAAE,MAAM,iEAAiE,CAAC;AAuB1G,wBAAgB,mBAAmB,CAAC,WAAW,EAAE,uBAAuB,GAAG,MAAM,CAkKhF"}

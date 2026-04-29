@@ -20,6 +20,7 @@ import RecurringPage from './pages/RecurringPage';
 import CategoriesPage from './pages/CategoriesPage';
 import TaxCalculatorPage from './pages/TaxCalculatorPage';
 import SettingsPage from './pages/SettingsPage';
+import PayrollPage from './pages/PayrollPage';
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
                   <Route path="/suppliers" element={<SuppliersPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/budget" element={<BudgetPage />} />
+                  <Route path="/payroll" element={<PayrollPage />} />
                   <Route path="/categories" element={<CategoriesPage />} />
                   <Route path="/tax-calculator" element={<TaxCalculatorPage />} />
                   <Route path="/settings" element={<SettingsPage />} />

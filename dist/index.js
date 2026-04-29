@@ -31,6 +31,7 @@ const sqlite_customer_repository_1 = require("./infrastructure/database/reposito
 const sqlite_category_repository_1 = require("./infrastructure/database/repositories/sqlite-category.repository");
 const sqlite_budget_repository_1 = require("./infrastructure/database/repositories/sqlite-budget.repository");
 const sqlite_sale_repository_1 = require("./infrastructure/database/repositories/sqlite-sale.repository");
+const sqlite_payroll_repository_1 = require("./infrastructure/database/repositories/sqlite-payroll.repository");
 // Domain Services
 const finance_1 = require("./domains/finance");
 const inventory_1 = require("./domains/inventory");
@@ -58,6 +59,7 @@ const customer_routes_1 = require("./interfaces/api/routes/customer.routes");
 const category_routes_1 = require("./interfaces/api/routes/category.routes");
 const budget_routes_1 = require("./interfaces/api/routes/budget.routes");
 const sales_routes_1 = require("./interfaces/api/routes/sales.routes");
+const payroll_routes_1 = require("./interfaces/api/routes/payroll.routes");
 const auth_middleware_1 = require("./interfaces/api/middleware/auth.middleware");
 const request_logger_middleware_1 = require("./interfaces/api/middleware/request-logger.middleware");
 const audit_service_1 = require("./shared/audit/audit.service");
@@ -92,6 +94,7 @@ async function bootstrap() {
     const categoryRepo = new sqlite_category_repository_1.SqliteCategoryRepository(knex);
     const budgetRepo = new sqlite_budget_repository_1.SqliteBudgetRepository(knex);
     const saleRepo = new sqlite_sale_repository_1.SqliteSaleRepository(knex);
+    const payrollRepo = new sqlite_payroll_repository_1.SqlitePayrollRepository(knex);
     // Movement repo (inline implementation)
     const movementRepo = {
         async findById(id) { const r = await knex('stock_movements').where({ id }).first(); return r ? inventory_2.StockMovement.reconstitute({ id: r.id, materialId: r.material_id, type: r.type, quantity: parseFloat(r.quantity), description: r.description, relatedProjectId: r.related_project_id, date: new Date(r.date), isCorrection: Boolean(r.is_correction), correctionReason: r.correction_reason ?? null, correctedAt: r.corrected_at ? new Date(r.corrected_at) : null, createdAt: new Date(r.created_at), updatedAt: new Date(r.updated_at) }) : null; },
@@ -165,6 +168,7 @@ async function bootstrap() {
     app.use('/api/customers', auth, auth_middleware_1.adminOnly, (0, customer_routes_1.createCustomerRoutes)(customerRepo));
     app.use('/api/categories', auth, auth_middleware_1.adminOnly, (0, category_routes_1.createCategoryRoutes)(categoryRepo));
     app.use('/api/budget', auth, auth_middleware_1.adminOnly, (0, budget_routes_1.createBudgetRoutes)(budgetRepo));
+    app.use('/api/payroll', auth, auth_middleware_1.adminOnly, (0, payroll_routes_1.createPayrollRoutes)(payrollRepo));
     app.use('/api/sales', auth, auth_middleware_1.adminOnly, (0, sales_routes_1.createSalesRoutes)(saleRepo, transactionRepo, projectRepo));
     app.use('/api', auth, auth_middleware_1.adminOnly, (0, procurement_routes_1.createProcurementRoutes)(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
     app.use('/api', auth, auth_middleware_1.adminOnly, (0, reports_routes_1.createReportsRoutes)(transactionRepo, projectRepo, invoiceRepo, materialRepo));

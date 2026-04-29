@@ -29,6 +29,7 @@ import { SqliteCustomerRepository } from '@infrastructure/database/repositories/
 import { SqliteCategoryRepository } from '@infrastructure/database/repositories/sqlite-category.repository';
 import { SqliteBudgetRepository } from '@infrastructure/database/repositories/sqlite-budget.repository';
 import { SqliteSaleRepository } from '@infrastructure/database/repositories/sqlite-sale.repository';
+import { SqlitePayrollRepository } from '@infrastructure/database/repositories/sqlite-payroll.repository';
 
 // Domain Services
 import { CashService } from '@domains/finance';
@@ -59,6 +60,7 @@ import { createCustomerRoutes } from '@interfaces/api/routes/customer.routes';
 import { createCategoryRoutes } from '@interfaces/api/routes/category.routes';
 import { createBudgetRoutes } from '@interfaces/api/routes/budget.routes';
 import { createSalesRoutes } from '@interfaces/api/routes/sales.routes';
+import { createPayrollRoutes } from '@interfaces/api/routes/payroll.routes';
 import { adminOnly, authMiddleware } from '@interfaces/api/middleware/auth.middleware';
 import { createRequestLogger } from '@interfaces/api/middleware/request-logger.middleware';
 import { AuditService } from '@shared/audit/audit.service';
@@ -100,6 +102,7 @@ async function bootstrap() {
   const categoryRepo = new SqliteCategoryRepository(knex);
   const budgetRepo = new SqliteBudgetRepository(knex);
   const saleRepo = new SqliteSaleRepository(knex);
+  const payrollRepo = new SqlitePayrollRepository(knex);
 
   // Movement repo (inline implementation)
   const movementRepo = {
@@ -184,6 +187,7 @@ async function bootstrap() {
   app.use('/api/customers', auth, adminOnly, createCustomerRoutes(customerRepo));
   app.use('/api/categories', auth, adminOnly, createCategoryRoutes(categoryRepo));
   app.use('/api/budget', auth, adminOnly, createBudgetRoutes(budgetRepo));
+  app.use('/api/payroll', auth, adminOnly, createPayrollRoutes(payrollRepo));
   app.use('/api/sales', auth, adminOnly, createSalesRoutes(saleRepo, transactionRepo, projectRepo));
   app.use('/api', auth, adminOnly, createProcurementRoutes(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
   app.use('/api', auth, adminOnly, createReportsRoutes(transactionRepo, projectRepo, invoiceRepo, materialRepo));
