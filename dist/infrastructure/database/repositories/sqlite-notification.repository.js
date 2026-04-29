@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteNotificationRepository = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 class SqliteNotificationRepository {
     knex;
     constructor(knex) {

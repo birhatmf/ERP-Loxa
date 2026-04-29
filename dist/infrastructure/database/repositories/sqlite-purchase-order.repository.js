@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqlitePurchaseOrderRepository = void 0;
 exports.buildPurchaseOrderRecord = buildPurchaseOrderRecord;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 class SqlitePurchaseOrderRepository {
     knex;
     constructor(knex) {

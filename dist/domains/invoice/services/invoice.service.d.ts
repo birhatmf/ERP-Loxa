@@ -1,4 +1,4 @@
-import { Money, EventBus } from '@shared/types';
+import { Money, EventBus } from '../../../shared/types';
 import { Invoice } from '../entities/invoice.entity';
 import { IInvoiceRepository } from '../repositories/invoice.repository';
 /**

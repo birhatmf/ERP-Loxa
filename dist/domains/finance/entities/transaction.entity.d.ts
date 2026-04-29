@@ -1,4 +1,4 @@
-import { AggregateRoot, Money } from '@shared/types';
+import { AggregateRoot, Money } from '../../../shared/types';
 import { TransactionType, PaymentMethod, TransactionStatus } from './transaction.enums';
 interface TransactionProps {
     id: string;
@@ -42,6 +42,7 @@ export declare class Transaction extends AggregateRoot {
         description: string;
         createdBy: string;
         relatedProjectId?: string;
+        createdAt?: Date;
     }): Transaction;
     static reconstitute(props: TransactionProps): Transaction;
     get amount(): Money;
@@ -80,7 +81,9 @@ export declare class Transaction extends AggregateRoot {
         paymentMethod?: PaymentMethod;
         isInvoiced?: boolean;
         description?: string;
+        createdBy?: string;
         relatedProjectId?: string | null;
+        createdAt?: Date;
     }): void;
 }
 export {};

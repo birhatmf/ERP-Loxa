@@ -1,4 +1,4 @@
-import { AggregateRoot, Money } from '@shared/types';
+import { AggregateRoot, Money } from '../../../shared/types';
 import { InvoiceStatus } from './invoice.enums';
 import { InvoiceItem } from './invoice-item.entity';
 interface InvoiceProps {
@@ -87,6 +87,12 @@ export declare class Invoice extends AggregateRoot {
      * Mark invoice as overdue.
      */
     markAsOverdue(): void;
+    updateInfo(params: {
+        customerName?: string;
+        customerAddress?: string;
+        dueDate?: Date;
+        notes?: string;
+    }): void;
     /**
      * Cancel the invoice.
      */

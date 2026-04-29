@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteTransactionRepository = void 0;
-const finance_1 = require("@domains/finance");
-const types_1 = require("@shared/types");
+const finance_1 = require("../../../domains/finance");
+const types_1 = require("../../../shared/types");
 /**
  * SQLite implementation of Transaction repository.
  */

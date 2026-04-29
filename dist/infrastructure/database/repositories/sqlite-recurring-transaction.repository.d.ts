@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { RecurringTransaction } from '@domains/finance/entities/recurring-transaction.entity';
-import { IRecurringTransactionRepository } from '@domains/finance/repositories/recurring-transaction.repository';
+import { RecurringTransaction } from '../../../domains/finance/entities/recurring-transaction.entity';
+import { IRecurringTransactionRepository } from '../../../domains/finance/repositories/recurring-transaction.repository';
 export declare class SqliteRecurringTransactionRepository implements IRecurringTransactionRepository {
     private knex;
     constructor(knex: Knex);

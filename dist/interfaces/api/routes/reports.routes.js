@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createReportsRoutes = createReportsRoutes;
 const express_1 = require("express");
-const finance_1 = require("@domains/finance");
-const logger_1 = require("@shared/logger");
+const finance_1 = require("../../../domains/finance");
+const logger_1 = require("../../../shared/logger");
 function getRange(period) {
     const now = new Date();
     if (period === 'month') {

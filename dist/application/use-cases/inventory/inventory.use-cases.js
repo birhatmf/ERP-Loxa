@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AddStock = exports.CreateMaterial = void 0;
-const inventory_1 = require("@domains/inventory");
+const inventory_1 = require("../../../domains/inventory");
 /**
  * CreateMaterial Use Case
  * Creates a new material in the inventory catalog.

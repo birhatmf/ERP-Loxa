@@ -1,4 +1,4 @@
-import { AggregateRoot } from '@shared/types';
+import { AggregateRoot } from '../../../shared/types';
 import { StockMovementType } from './inventory.enums';
 interface StockMovementProps {
     id: string;

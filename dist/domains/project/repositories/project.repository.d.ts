@@ -1,4 +1,4 @@
-import { IRepository } from '@shared/types/repository.interface';
+import { IRepository } from '../../../shared/types/repository.interface';
 import { Project } from '../entities/project.entity';
 import { ProjectStatus } from '../entities/project.enums';
 /**

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CashService = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const transaction_enums_1 = require("../entities/transaction.enums");
 /**
  * CashService - Domain Service

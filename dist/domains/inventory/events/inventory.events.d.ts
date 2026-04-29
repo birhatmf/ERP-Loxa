@@ -1,4 +1,4 @@
-import { DomainEvent } from '@shared/types';
+import { DomainEvent } from '../../../shared/types';
 import { StockMovementType } from '../entities/inventory.enums';
 /**
  * Fired when a stock movement is created.

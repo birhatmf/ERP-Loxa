@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { Material } from '@domains/inventory';
-import { IMaterialRepository } from '@domains/inventory';
+import { Material } from '../../../domains/inventory';
+import { IMaterialRepository } from '../../../domains/inventory';
 /**
  * SQLite implementation of Material repository.
  */

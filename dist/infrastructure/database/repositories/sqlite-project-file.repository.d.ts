@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { IProjectFileRepository, ProjectFileRecord } from '@domains/project';
+import { IProjectFileRepository, ProjectFileRecord } from '../../../domains/project';
 export declare class SqliteProjectFileRepository implements IProjectFileRepository {
     private knex;
     constructor(knex: Knex);

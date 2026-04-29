@@ -1,4 +1,4 @@
-import { AggregateRoot, Money } from '@shared/types';
+import { AggregateRoot, Money } from '../../../shared/types';
 import { CheckType, CheckStatus } from './payment.enums';
 interface CheckProps {
     id: string;

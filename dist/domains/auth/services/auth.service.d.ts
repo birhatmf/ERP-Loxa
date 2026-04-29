@@ -25,6 +25,7 @@ export declare class AuthService {
         name: string;
         role?: string;
     }): Promise<LoginResult>;
+    hasUsers(): Promise<boolean>;
     /**
      * Login with username and password.
      */

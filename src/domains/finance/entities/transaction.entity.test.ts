@@ -147,6 +147,7 @@ describe('Transaction Entity', () => {
       paymentMethod: PaymentMethod.TRANSFER,
       isInvoiced: true,
       description: 'Updated',
+      createdBy: 'updated-user',
     });
 
     expect(tx.amount.amount).toBe(1500);
@@ -155,6 +156,28 @@ describe('Transaction Entity', () => {
     expect(tx.paymentMethod).toBe(PaymentMethod.TRANSFER);
     expect(tx.isInvoiced).toBe(true);
     expect(tx.description).toBe('Updated');
+    expect(tx.createdBy).toBe('updated-user');
+  });
+
+  it('should create and update transaction date', () => {
+    const initialDate = new Date('2026-04-20T09:30:00.000Z');
+    const updatedDate = new Date('2026-04-22T14:15:00.000Z');
+    const tx = Transaction.create({
+      amount: Money.create(1000),
+      vatAmount: Money.create(180),
+      type: TransactionType.INCOME,
+      paymentMethod: PaymentMethod.CASH,
+      isInvoiced: false,
+      description: 'Test',
+      createdBy: 'test',
+      createdAt: initialDate,
+    });
+
+    expect(tx.createdAt).toEqual(initialDate);
+
+    tx.updateDetails({ createdAt: updatedDate });
+
+    expect(tx.createdAt).toEqual(updatedDate);
   });
 
   it('should not edit cancelled transaction', () => {

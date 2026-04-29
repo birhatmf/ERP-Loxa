@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Invoice = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const invoice_enums_1 = require("./invoice.enums");
 const invoice_item_entity_1 = require("./invoice-item.entity");
 const invoice_events_1 = require("../events/invoice.events");
@@ -144,6 +144,25 @@ class Invoice extends types_1.AggregateRoot {
         this._status = invoice_enums_1.InvoiceStatus.OVERDUE;
         this.touch();
         this.addDomainEvent(new invoice_events_1.InvoiceOverdueEvent(this.id, this._invoiceNumber, this._totalAmount));
+    }
+    updateInfo(params) {
+        if (params.customerName !== undefined) {
+            const value = params.customerName.trim();
+            if (!value) {
+                throw new types_1.BusinessRuleViolationError('Customer name is required');
+            }
+            this._customerName = value;
+        }
+        if (params.customerAddress !== undefined) {
+            this._customerAddress = params.customerAddress;
+        }
+        if (params.dueDate !== undefined) {
+            this._dueDate = params.dueDate;
+        }
+        if (params.notes !== undefined) {
+            this._notes = params.notes;
+        }
+        this.touch();
     }
     /**
      * Cancel the invoice.

@@ -10,8 +10,11 @@ export default defineConfig({
     },
   },
   server: {
+    port: 4050,
+    host: true,
+    allowedHosts: ['pinksistem.store'],
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': 'http://localhost:4051',
     },
   },
 });

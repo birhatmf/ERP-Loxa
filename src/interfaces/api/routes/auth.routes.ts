@@ -10,8 +10,26 @@ export function createAuthRoutes(authService: AuthService): Router {
   router.post('/register', async (req: Request, res: Response) => {
     try {
       const { username, password, name, role } = req.body;
+      const hasUsers = await authService.hasUsers();
 
-      const result = await authService.register({ username, password, name, role });
+      if (hasUsers) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const requester = await authService.verifyToken(authHeader.substring(7));
+        if (!requester.isAdmin) {
+          return res.status(403).json({ error: 'Admin access required' });
+        }
+      }
+
+      const result = await authService.register({
+        username,
+        password,
+        name,
+        role: hasUsers ? role : 'admin',
+      });
 
       logger.info('User registered', { username: result.user.username, userId: result.user.id, role: result.user.role });
       res.status(201).json(result);

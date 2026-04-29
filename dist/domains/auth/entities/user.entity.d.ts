@@ -1,4 +1,4 @@
-import { Entity } from '@shared/types';
+import { Entity } from '../../../shared/types';
 export declare enum UserRole {
     ADMIN = "admin",
     USER = "user"

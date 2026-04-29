@@ -11,53 +11,61 @@ const dataDir = path_1.default.join(process.cwd(), 'data');
 if (!fs_1.default.existsSync(dataDir)) {
     fs_1.default.mkdirSync(dataDir, { recursive: true });
 }
-const types_1 = require("@shared/types");
-const knexfile_1 = require("@infrastructure/database/knexfile");
-const sqlite_audit_log_repository_1 = require("@infrastructure/database/repositories/sqlite-audit-log.repository");
-const sqlite_notification_repository_1 = require("@infrastructure/database/repositories/sqlite-notification.repository");
+const types_1 = require("./shared/types");
+const knexfile_1 = require("./infrastructure/database/knexfile");
+const sqlite_audit_log_repository_1 = require("./infrastructure/database/repositories/sqlite-audit-log.repository");
+const sqlite_notification_repository_1 = require("./infrastructure/database/repositories/sqlite-notification.repository");
 // Repositories
-const sqlite_transaction_repository_1 = require("@infrastructure/database/repositories/sqlite-transaction.repository");
-const sqlite_material_repository_1 = require("@infrastructure/database/repositories/sqlite-material.repository");
-const sqlite_project_repository_1 = require("@infrastructure/database/repositories/sqlite-project.repository");
-const sqlite_project_file_repository_1 = require("@infrastructure/database/repositories/sqlite-project-file.repository");
-const sqlite_check_repository_1 = require("@infrastructure/database/repositories/sqlite-check.repository");
-const sqlite_check_file_repository_1 = require("@infrastructure/database/repositories/sqlite-check-file.repository");
-const sqlite_invoice_repository_1 = require("@infrastructure/database/repositories/sqlite-invoice.repository");
-const sqlite_user_repository_1 = require("@infrastructure/database/repositories/sqlite-user.repository");
-const sqlite_recurring_transaction_repository_1 = require("@infrastructure/database/repositories/sqlite-recurring-transaction.repository");
-const sqlite_supplier_repository_1 = require("@infrastructure/database/repositories/sqlite-supplier.repository");
-const sqlite_purchase_order_repository_1 = require("@infrastructure/database/repositories/sqlite-purchase-order.repository");
+const sqlite_transaction_repository_1 = require("./infrastructure/database/repositories/sqlite-transaction.repository");
+const sqlite_material_repository_1 = require("./infrastructure/database/repositories/sqlite-material.repository");
+const sqlite_project_repository_1 = require("./infrastructure/database/repositories/sqlite-project.repository");
+const sqlite_project_file_repository_1 = require("./infrastructure/database/repositories/sqlite-project-file.repository");
+const sqlite_check_repository_1 = require("./infrastructure/database/repositories/sqlite-check.repository");
+const sqlite_check_file_repository_1 = require("./infrastructure/database/repositories/sqlite-check-file.repository");
+const sqlite_invoice_repository_1 = require("./infrastructure/database/repositories/sqlite-invoice.repository");
+const sqlite_user_repository_1 = require("./infrastructure/database/repositories/sqlite-user.repository");
+const sqlite_recurring_transaction_repository_1 = require("./infrastructure/database/repositories/sqlite-recurring-transaction.repository");
+const sqlite_supplier_repository_1 = require("./infrastructure/database/repositories/sqlite-supplier.repository");
+const sqlite_purchase_order_repository_1 = require("./infrastructure/database/repositories/sqlite-purchase-order.repository");
+const sqlite_customer_repository_1 = require("./infrastructure/database/repositories/sqlite-customer.repository");
+const sqlite_category_repository_1 = require("./infrastructure/database/repositories/sqlite-category.repository");
+const sqlite_budget_repository_1 = require("./infrastructure/database/repositories/sqlite-budget.repository");
+const sqlite_sale_repository_1 = require("./infrastructure/database/repositories/sqlite-sale.repository");
 // Domain Services
-const finance_1 = require("@domains/finance");
-const inventory_1 = require("@domains/inventory");
-const project_1 = require("@domains/project");
-const payment_1 = require("@domains/payment");
-const invoice_1 = require("@domains/invoice");
-const auth_service_1 = require("@domains/auth/services/auth.service");
+const finance_1 = require("./domains/finance");
+const inventory_1 = require("./domains/inventory");
+const project_1 = require("./domains/project");
+const payment_1 = require("./domains/payment");
+const invoice_1 = require("./domains/invoice");
+const auth_service_1 = require("./domains/auth/services/auth.service");
 // Use Cases
-const create_transaction_use_case_1 = require("@application/use-cases/finance/create-transaction.use-case");
-const project_use_cases_1 = require("@application/use-cases/project/project.use-cases");
-const inventory_use_cases_1 = require("@application/use-cases/inventory/inventory.use-cases");
-const payment_use_cases_1 = require("@application/use-cases/payment/payment.use-cases");
+const create_transaction_use_case_1 = require("./application/use-cases/finance/create-transaction.use-case");
+const project_use_cases_1 = require("./application/use-cases/project/project.use-cases");
+const inventory_use_cases_1 = require("./application/use-cases/inventory/inventory.use-cases");
+const payment_use_cases_1 = require("./application/use-cases/payment/payment.use-cases");
 // Routes
-const finance_routes_1 = require("@interfaces/api/routes/finance.routes");
-const project_routes_1 = require("@interfaces/api/routes/project.routes");
-const inventory_routes_1 = require("@interfaces/api/routes/inventory.routes");
-const auth_routes_1 = require("@interfaces/api/routes/auth.routes");
-const invoice_routes_1 = require("@interfaces/api/routes/invoice.routes");
-const payment_routes_1 = require("@interfaces/api/routes/payment.routes");
-const recurring_routes_1 = require("@interfaces/api/routes/recurring.routes");
-const notification_routes_1 = require("@interfaces/api/routes/notification.routes");
-const procurement_routes_1 = require("@interfaces/api/routes/procurement.routes");
-const reports_routes_1 = require("@interfaces/api/routes/reports.routes");
-const auth_middleware_1 = require("@interfaces/api/middleware/auth.middleware");
-const request_logger_middleware_1 = require("@interfaces/api/middleware/request-logger.middleware");
-const audit_service_1 = require("@shared/audit/audit.service");
+const finance_routes_1 = require("./interfaces/api/routes/finance.routes");
+const project_routes_1 = require("./interfaces/api/routes/project.routes");
+const inventory_routes_1 = require("./interfaces/api/routes/inventory.routes");
+const auth_routes_1 = require("./interfaces/api/routes/auth.routes");
+const invoice_routes_1 = require("./interfaces/api/routes/invoice.routes");
+const payment_routes_1 = require("./interfaces/api/routes/payment.routes");
+const recurring_routes_1 = require("./interfaces/api/routes/recurring.routes");
+const notification_routes_1 = require("./interfaces/api/routes/notification.routes");
+const procurement_routes_1 = require("./interfaces/api/routes/procurement.routes");
+const reports_routes_1 = require("./interfaces/api/routes/reports.routes");
+const customer_routes_1 = require("./interfaces/api/routes/customer.routes");
+const category_routes_1 = require("./interfaces/api/routes/category.routes");
+const budget_routes_1 = require("./interfaces/api/routes/budget.routes");
+const sales_routes_1 = require("./interfaces/api/routes/sales.routes");
+const auth_middleware_1 = require("./interfaces/api/middleware/auth.middleware");
+const request_logger_middleware_1 = require("./interfaces/api/middleware/request-logger.middleware");
+const audit_service_1 = require("./shared/audit/audit.service");
 // Stock movement repository (inline)
-const inventory_2 = require("@domains/inventory");
+const inventory_2 = require("./domains/inventory");
 async function bootstrap() {
     const app = (0, express_1.default)();
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 4051;
     // Middleware
     app.use(express_1.default.json());
     // Database
@@ -80,6 +88,10 @@ async function bootstrap() {
     const notificationRepo = new sqlite_notification_repository_1.SqliteNotificationRepository(knex);
     const supplierRepo = new sqlite_supplier_repository_1.SqliteSupplierRepository(knex);
     const purchaseOrderRepo = new sqlite_purchase_order_repository_1.SqlitePurchaseOrderRepository(knex);
+    const customerRepo = new sqlite_customer_repository_1.SqliteCustomerRepository(knex);
+    const categoryRepo = new sqlite_category_repository_1.SqliteCategoryRepository(knex);
+    const budgetRepo = new sqlite_budget_repository_1.SqliteBudgetRepository(knex);
+    const saleRepo = new sqlite_sale_repository_1.SqliteSaleRepository(knex);
     // Movement repo (inline implementation)
     const movementRepo = {
         async findById(id) { const r = await knex('stock_movements').where({ id }).first(); return r ? inventory_2.StockMovement.reconstitute({ id: r.id, materialId: r.material_id, type: r.type, quantity: parseFloat(r.quantity), description: r.description, relatedProjectId: r.related_project_id, date: new Date(r.date), isCorrection: Boolean(r.is_correction), correctionReason: r.correction_reason ?? null, correctedAt: r.corrected_at ? new Date(r.corrected_at) : null, createdAt: new Date(r.created_at), updatedAt: new Date(r.updated_at) }) : null; },
@@ -143,15 +155,19 @@ async function bootstrap() {
     // Auth (public)
     app.use('/api/auth', (0, auth_routes_1.createAuthRoutes)(authService));
     // Protected API routes
-    app.use('/api/finance', auth, (0, finance_routes_1.createFinanceRoutes)(createTransaction, updateTransaction, cancelTransaction, cashService, transactionRepo));
-    app.use('/api/finance/recurring', (0, recurring_routes_1.createRecurringRoutes)(recurringRepo, createTransaction));
-    app.use('/api/project', auth, (0, project_routes_1.createProjectRoutes)(createProject, addProjectItem, updateProjectInfo, deleteProject, updateProjectStatus, costService, projectRepo, projectFileRepo));
-    app.use('/api/inventory', auth, (0, inventory_routes_1.createInventoryRoutes)(createMaterial, addStock, stockService, materialRepo, purchaseOrderRepo, movementRepo));
-    app.use('/api/invoices', auth, (0, invoice_routes_1.createInvoiceRoutes)(invoiceRepo, invoiceService, eventBus));
-    app.use('/api/payment', auth, (0, payment_routes_1.createPaymentRoutes)(new payment_use_cases_1.CreateCheck(checkRepo, eventBus), new payment_use_cases_1.PayCheck(checkRepo, transactionRepo, eventBus), checkRepo, checkFileRepo, transactionRepo, eventBus));
-    app.use('/api/notifications', auth, (0, notification_routes_1.createNotificationRoutes)(notificationRepo));
-    app.use('/api', auth, (0, procurement_routes_1.createProcurementRoutes)(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
-    app.use('/api', auth, (0, reports_routes_1.createReportsRoutes)(transactionRepo, projectRepo, invoiceRepo, materialRepo));
+    app.use('/api/finance', auth, auth_middleware_1.adminOnly, (0, finance_routes_1.createFinanceRoutes)(createTransaction, updateTransaction, cancelTransaction, cashService, transactionRepo));
+    app.use('/api/finance/recurring', auth, auth_middleware_1.adminOnly, (0, recurring_routes_1.createRecurringRoutes)(recurringRepo, createTransaction));
+    app.use('/api/project', auth, auth_middleware_1.adminOnly, (0, project_routes_1.createProjectRoutes)(createProject, addProjectItem, updateProjectInfo, deleteProject, updateProjectStatus, costService, projectRepo, projectFileRepo, saleRepo));
+    app.use('/api/inventory', auth, auth_middleware_1.adminOnly, (0, inventory_routes_1.createInventoryRoutes)(createMaterial, addStock, stockService, materialRepo, purchaseOrderRepo, movementRepo));
+    app.use('/api/invoices', auth, auth_middleware_1.adminOnly, (0, invoice_routes_1.createInvoiceRoutes)(invoiceRepo, invoiceService, eventBus));
+    app.use('/api/payment', auth, auth_middleware_1.adminOnly, (0, payment_routes_1.createPaymentRoutes)(new payment_use_cases_1.CreateCheck(checkRepo, eventBus), new payment_use_cases_1.PayCheck(checkRepo, transactionRepo, eventBus), checkRepo, checkFileRepo, transactionRepo, eventBus));
+    app.use('/api/notifications', auth, auth_middleware_1.adminOnly, (0, notification_routes_1.createNotificationRoutes)(notificationRepo));
+    app.use('/api/customers', auth, auth_middleware_1.adminOnly, (0, customer_routes_1.createCustomerRoutes)(customerRepo));
+    app.use('/api/categories', auth, auth_middleware_1.adminOnly, (0, category_routes_1.createCategoryRoutes)(categoryRepo));
+    app.use('/api/budget', auth, auth_middleware_1.adminOnly, (0, budget_routes_1.createBudgetRoutes)(budgetRepo));
+    app.use('/api/sales', auth, auth_middleware_1.adminOnly, (0, sales_routes_1.createSalesRoutes)(saleRepo, transactionRepo, projectRepo));
+    app.use('/api', auth, auth_middleware_1.adminOnly, (0, procurement_routes_1.createProcurementRoutes)(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
+    app.use('/api', auth, auth_middleware_1.adminOnly, (0, reports_routes_1.createReportsRoutes)(transactionRepo, projectRepo, invoiceRepo, materialRepo));
     // Health check (public)
     app.get('/health', (req, res) => {
         res.json({ status: 'ok', timestamp: new Date().toISOString() });

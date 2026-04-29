@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DeleteProject = exports.UpdateProjectInfo = exports.UpdateProjectStatus = exports.AddProjectItem = exports.CreateProject = void 0;
-const types_1 = require("@shared/types");
-const project_1 = require("@domains/project");
+const types_1 = require("../../../shared/types");
+const project_1 = require("../../../domains/project");
 /**
  * CreateProject Use Case
  * Creates a new project with initial info.

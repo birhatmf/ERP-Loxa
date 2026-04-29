@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LowStockWarningEvent = exports.StockAdjustedEvent = exports.StockMovementCreatedEvent = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 /**
  * Fired when a stock movement is created.
  */

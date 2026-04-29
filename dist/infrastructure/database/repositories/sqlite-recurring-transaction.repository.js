@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteRecurringTransactionRepository = void 0;
-const recurring_transaction_entity_1 = require("@domains/finance/entities/recurring-transaction.entity");
-const types_1 = require("@shared/types");
+const recurring_transaction_entity_1 = require("../../../domains/finance/entities/recurring-transaction.entity");
+const types_1 = require("../../../shared/types");
 class SqliteRecurringTransactionRepository {
     knex;
     constructor(knex) {

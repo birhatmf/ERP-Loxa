@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { Check, CheckType, CheckStatus } from '@domains/payment';
-import { ICheckRepository } from '@domains/payment';
+import { Check, CheckType, CheckStatus } from '../../../domains/payment';
+import { ICheckRepository } from '../../../domains/payment';
 /**
  * SQLite implementation of Check repository.
  */

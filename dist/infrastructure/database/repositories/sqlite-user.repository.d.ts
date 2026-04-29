@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { User } from '@domains/auth/entities/user.entity';
-import { IUserRepository } from '@domains/auth/repositories/user.repository';
+import { User } from '../../../domains/auth/entities/user.entity';
+import { IUserRepository } from '../../../domains/auth/repositories/user.repository';
 export declare class SqliteUserRepository implements IUserRepository {
     private knex;
     constructor(knex: Knex);

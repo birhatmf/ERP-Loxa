@@ -1,4 +1,4 @@
-import { DomainEvent, Money } from '@shared/types';
+import { DomainEvent, Money } from '../../../shared/types';
 import { TransactionType } from '../entities/transaction.enums';
 /**
  * Fired when a new transaction is created.

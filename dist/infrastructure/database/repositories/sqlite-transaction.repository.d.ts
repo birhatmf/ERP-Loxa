@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { Transaction, TransactionType, PaymentMethod, TransactionStatus } from '@domains/finance';
-import { ITransactionRepository } from '@domains/finance';
+import { Transaction, TransactionType, PaymentMethod, TransactionStatus } from '../../../domains/finance';
+import { ITransactionRepository } from '../../../domains/finance';
 /**
  * SQLite implementation of Transaction repository.
  */

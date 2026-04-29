@@ -59,7 +59,7 @@ import { createCustomerRoutes } from '@interfaces/api/routes/customer.routes';
 import { createCategoryRoutes } from '@interfaces/api/routes/category.routes';
 import { createBudgetRoutes } from '@interfaces/api/routes/budget.routes';
 import { createSalesRoutes } from '@interfaces/api/routes/sales.routes';
-import { authMiddleware } from '@interfaces/api/middleware/auth.middleware';
+import { adminOnly, authMiddleware } from '@interfaces/api/middleware/auth.middleware';
 import { createRequestLogger } from '@interfaces/api/middleware/request-logger.middleware';
 import { AuditService } from '@shared/audit/audit.service';
 import { LowStockWarningEvent } from '@domains/inventory';
@@ -69,7 +69,7 @@ import { StockMovement, StockMovementType } from '@domains/inventory';
 
 async function bootstrap() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 4051;
 
   // Middleware
   app.use(express.json());
@@ -167,12 +167,12 @@ async function bootstrap() {
   app.use('/api/auth', createAuthRoutes(authService));
 
   // Protected API routes
-  app.use('/api/finance', auth, createFinanceRoutes(createTransaction, updateTransaction, cancelTransaction, cashService, transactionRepo));
-  app.use('/api/finance/recurring', createRecurringRoutes(recurringRepo, createTransaction));
-  app.use('/api/project', auth, createProjectRoutes(createProject, addProjectItem, updateProjectInfo, deleteProject, updateProjectStatus, costService, projectRepo, projectFileRepo));
-  app.use('/api/inventory', auth, createInventoryRoutes(createMaterial, addStock, stockService, materialRepo, purchaseOrderRepo, movementRepo as any));
-  app.use('/api/invoices', auth, createInvoiceRoutes(invoiceRepo, invoiceService, eventBus));
-  app.use('/api/payment', auth, createPaymentRoutes(
+  app.use('/api/finance', auth, adminOnly, createFinanceRoutes(createTransaction, updateTransaction, cancelTransaction, cashService, transactionRepo));
+  app.use('/api/finance/recurring', auth, adminOnly, createRecurringRoutes(recurringRepo, createTransaction));
+  app.use('/api/project', auth, adminOnly, createProjectRoutes(createProject, addProjectItem, updateProjectInfo, deleteProject, updateProjectStatus, costService, projectRepo, projectFileRepo, saleRepo));
+  app.use('/api/inventory', auth, adminOnly, createInventoryRoutes(createMaterial, addStock, stockService, materialRepo, purchaseOrderRepo, movementRepo as any));
+  app.use('/api/invoices', auth, adminOnly, createInvoiceRoutes(invoiceRepo, invoiceService, eventBus));
+  app.use('/api/payment', auth, adminOnly, createPaymentRoutes(
     new CreateCheck(checkRepo, eventBus),
     new PayCheck(checkRepo, transactionRepo, eventBus),
     checkRepo,
@@ -180,13 +180,13 @@ async function bootstrap() {
     transactionRepo,
     eventBus
   ));
-  app.use('/api/notifications', auth, createNotificationRoutes(notificationRepo));
-  app.use('/api/customers', auth, createCustomerRoutes(customerRepo));
-  app.use('/api/categories', auth, createCategoryRoutes(categoryRepo));
-  app.use('/api/budget', auth, createBudgetRoutes(budgetRepo));
-  app.use('/api/sales', auth, createSalesRoutes(saleRepo));
-  app.use('/api', auth, createProcurementRoutes(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
-  app.use('/api', auth, createReportsRoutes(transactionRepo, projectRepo, invoiceRepo, materialRepo));
+  app.use('/api/notifications', auth, adminOnly, createNotificationRoutes(notificationRepo));
+  app.use('/api/customers', auth, adminOnly, createCustomerRoutes(customerRepo));
+  app.use('/api/categories', auth, adminOnly, createCategoryRoutes(categoryRepo));
+  app.use('/api/budget', auth, adminOnly, createBudgetRoutes(budgetRepo));
+  app.use('/api/sales', auth, adminOnly, createSalesRoutes(saleRepo, transactionRepo, projectRepo));
+  app.use('/api', auth, adminOnly, createProcurementRoutes(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
+  app.use('/api', auth, adminOnly, createReportsRoutes(transactionRepo, projectRepo, invoiceRepo, materialRepo));
 
   // Health check (public)
   app.get('/health', (req, res) => {

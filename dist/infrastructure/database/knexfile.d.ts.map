@@ -1,1 +1,1 @@
-{"version":3,"file":"knexfile.d.ts","sourceRoot":"","sources":["../../../src/infrastructure/database/knexfile.ts"],"names":[],"mappings":"AAAA,OAAa,EAAE,IAAI,EAAE,MAAM,MAAM,CAAC;AAKlC,eAAO,MAAM,UAAU,EAAE,IAAI,CAAC,MAY7B,CAAC;AAEF,wBAAgB,gBAAgB,IAAI,IAAI,CAEvC"}
+{"version":3,"file":"knexfile.d.ts","sourceRoot":"","sources":["../../../src/infrastructure/database/knexfile.ts"],"names":[],"mappings":"AAAA,OAAa,EAAE,IAAI,EAAE,MAAM,MAAM,CAAC;AAKlC,eAAO,MAAM,UAAU,EAAE,IAAI,CAAC,MAa7B,CAAC;AAEF,wBAAgB,gBAAgB,IAAI,IAAI,CAEvC"}

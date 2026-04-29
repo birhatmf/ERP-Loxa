@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteStockMovementRepository = void 0;
-const inventory_1 = require("@domains/inventory");
+const inventory_1 = require("../../../domains/inventory");
 class SqliteStockMovementRepository {
     knex;
     constructor(knex) {

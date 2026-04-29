@@ -1,6 +1,6 @@
-import { Money, EventBus } from '@shared/types';
+import { Money, EventBus } from '../../../shared/types';
 import { Project } from '../entities/project.entity';
-import { AuditService } from '@shared/audit/audit.service';
+import { AuditService } from '../../../shared/audit/audit.service';
 /**
  * CostCalculationService - Domain Service
  * Calculates project costs and margins.

@@ -1,4 +1,4 @@
-import { DomainEvent, Money } from '@shared/types';
+import { DomainEvent, Money } from '../../../shared/types';
 import { ProjectStatus } from '../entities/project.enums';
 /**
  * Fired when a new project is created.

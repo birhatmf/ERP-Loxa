@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CashBalanceChangedEvent = exports.TransactionCancelledEvent = exports.TransactionCreatedEvent = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 /**
  * Fired when a new transaction is created.
  */

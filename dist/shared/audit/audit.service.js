@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuditService = void 0;
-const logger_1 = require("@shared/logger");
-const types_1 = require("@shared/types");
+const logger_1 = require("../logger");
+const types_1 = require("../types");
 class AuditService {
     auditRepo;
     constructor(auditRepo) {

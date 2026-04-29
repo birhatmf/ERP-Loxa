@@ -1,4 +1,4 @@
-import { AggregateRoot } from '@shared/types';
+import { AggregateRoot } from '../../../shared/types';
 import { Unit } from './inventory.enums';
 interface MaterialProps {
     id: string;

@@ -60,9 +60,13 @@ export class Transaction extends AggregateRoot {
     description: string;
     createdBy: string;
     relatedProjectId?: string;
+    createdAt?: Date;
   }): Transaction {
     if (params.amount.isZero() || params.amount.isNegative()) {
       throw new BusinessRuleViolationError('Transaction amount must be positive');
+    }
+    if (params.createdAt && Number.isNaN(params.createdAt.getTime())) {
+      throw new BusinessRuleViolationError('Transaction date is invalid');
     }
 
     const now = new Date();
@@ -70,7 +74,7 @@ export class Transaction extends AggregateRoot {
       id: generateId(),
       ...params,
       status: TransactionStatus.ACTIVE,
-      createdAt: now,
+      createdAt: params.createdAt ?? now,
       updatedAt: now,
     });
 
@@ -153,7 +157,9 @@ export class Transaction extends AggregateRoot {
     paymentMethod?: PaymentMethod;
     isInvoiced?: boolean;
     description?: string;
+    createdBy?: string;
     relatedProjectId?: string | null;
+    createdAt?: Date;
   }): void {
     if (this._status === TransactionStatus.CANCELLED) {
       throw new BusinessRuleViolationError('Cancelled transactions cannot be edited');
@@ -189,8 +195,23 @@ export class Transaction extends AggregateRoot {
       this._description = params.description;
     }
 
+    if (params.createdBy !== undefined) {
+      const value = params.createdBy.trim();
+      if (!value) {
+        throw new BusinessRuleViolationError('Transaction creator is required');
+      }
+      this._createdBy = value;
+    }
+
     if (params.relatedProjectId !== undefined) {
       this._relatedProjectId = params.relatedProjectId ?? undefined;
+    }
+
+    if (params.createdAt !== undefined) {
+      if (Number.isNaN(params.createdAt.getTime())) {
+        throw new BusinessRuleViolationError('Transaction date is invalid');
+      }
+      (this as { createdAt: Date }).createdAt = params.createdAt;
     }
 
     this.touch();

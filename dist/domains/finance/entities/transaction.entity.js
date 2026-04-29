@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Transaction = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const transaction_enums_1 = require("./transaction.enums");
 const finance_events_1 = require("../events/finance.events");
 /**
@@ -39,12 +39,15 @@ class Transaction extends types_1.AggregateRoot {
         if (params.amount.isZero() || params.amount.isNegative()) {
             throw new types_1.BusinessRuleViolationError('Transaction amount must be positive');
         }
+        if (params.createdAt && Number.isNaN(params.createdAt.getTime())) {
+            throw new types_1.BusinessRuleViolationError('Transaction date is invalid');
+        }
         const now = new Date();
         const transaction = new Transaction({
             id: (0, types_1.generateId)(),
             ...params,
             status: transaction_enums_1.TransactionStatus.ACTIVE,
-            createdAt: now,
+            createdAt: params.createdAt ?? now,
             updatedAt: now,
         });
         transaction.addDomainEvent(new finance_events_1.TransactionCreatedEvent(transaction.id, params.type, params.amount));
@@ -133,8 +136,21 @@ class Transaction extends types_1.AggregateRoot {
         if (params.description !== undefined) {
             this._description = params.description;
         }
+        if (params.createdBy !== undefined) {
+            const value = params.createdBy.trim();
+            if (!value) {
+                throw new types_1.BusinessRuleViolationError('Transaction creator is required');
+            }
+            this._createdBy = value;
+        }
         if (params.relatedProjectId !== undefined) {
             this._relatedProjectId = params.relatedProjectId ?? undefined;
+        }
+        if (params.createdAt !== undefined) {
+            if (Number.isNaN(params.createdAt.getTime())) {
+                throw new types_1.BusinessRuleViolationError('Transaction date is invalid');
+            }
+            this.createdAt = params.createdAt;
         }
         this.touch();
     }

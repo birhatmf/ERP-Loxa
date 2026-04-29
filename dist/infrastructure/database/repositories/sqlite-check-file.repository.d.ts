@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { CheckFileRecord, ICheckFileRepository } from '@domains/payment';
+import { CheckFileRecord, ICheckFileRepository } from '../../../domains/payment';
 export declare class SqliteCheckFileRepository implements ICheckFileRepository {
     private knex;
     constructor(knex: Knex);

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteMaterialRepository = void 0;
-const inventory_1 = require("@domains/inventory");
+const inventory_1 = require("../../../domains/inventory");
 /**
  * SQLite implementation of Material repository.
  */

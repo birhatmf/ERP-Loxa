@@ -1,6 +1,6 @@
-import { EventBus } from '@shared/types';
-import { Material, StockService, Unit } from '@domains/inventory';
-import { IMaterialRepository } from '@domains/inventory';
+import { EventBus } from '../../../shared/types';
+import { Material, StockService, Unit } from '../../../domains/inventory';
+import { IMaterialRepository } from '../../../domains/inventory';
 /**
  * CreateMaterial Use Case
  * Creates a new material in the inventory catalog.

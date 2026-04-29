@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockMovement = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const inventory_enums_1 = require("./inventory.enums");
 const inventory_events_1 = require("../events/inventory.events");
 /**

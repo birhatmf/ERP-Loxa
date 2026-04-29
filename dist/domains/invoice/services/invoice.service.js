@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvoiceService = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const invoice_enums_1 = require("../entities/invoice.enums");
 /**
  * InvoiceService - Domain Service

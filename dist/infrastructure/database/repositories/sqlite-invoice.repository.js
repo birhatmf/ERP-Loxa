@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteInvoiceRepository = void 0;
-const invoice_1 = require("@domains/invoice");
-const types_1 = require("@shared/types");
+const invoice_1 = require("../../../domains/invoice");
+const types_1 = require("../../../shared/types");
 class SqliteInvoiceRepository {
     knex;
     constructor(knex) {

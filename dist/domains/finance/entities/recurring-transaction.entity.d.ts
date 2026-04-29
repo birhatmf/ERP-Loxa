@@ -1,4 +1,4 @@
-import { AggregateRoot, Money } from '@shared/types';
+import { AggregateRoot, Money } from '../../../shared/types';
 import { TransactionType } from './transaction.enums';
 import { RecurringFrequency } from './recurring-transaction.enums';
 interface RecurringTransactionProps {
@@ -15,6 +15,16 @@ interface RecurringTransactionProps {
     lastRun?: Date;
     createdAt: Date;
     updatedAt: Date;
+}
+interface RecurringTransactionUpdateProps {
+    description?: string;
+    amount?: number;
+    type?: TransactionType;
+    category?: string;
+    paymentMethod?: string;
+    frequency?: RecurringFrequency;
+    dayOfMonth?: number;
+    isActive?: boolean;
 }
 export declare class RecurringTransaction extends AggregateRoot {
     private _description;
@@ -50,6 +60,7 @@ export declare class RecurringTransaction extends AggregateRoot {
     get nextRun(): Date;
     get lastRun(): Date | undefined;
     setActive(isActive: boolean): void;
+    updateInfo(params: RecurringTransactionUpdateProps): void;
     markRun(runDate?: Date): void;
     private static calculateNextRun;
 }

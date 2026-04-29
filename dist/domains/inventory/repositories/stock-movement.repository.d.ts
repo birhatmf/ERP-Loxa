@@ -1,4 +1,4 @@
-import { IRepository } from '@shared/types/repository.interface';
+import { IRepository } from '../../../shared/types/repository.interface';
 import { StockMovement } from '../entities/stock-movement.entity';
 import { StockMovementType } from '../entities/inventory.enums';
 /**

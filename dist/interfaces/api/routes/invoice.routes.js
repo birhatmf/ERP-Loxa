@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createInvoiceRoutes = createInvoiceRoutes;
 const express_1 = require("express");
-const invoice_1 = require("@domains/invoice");
-const types_1 = require("@shared/types");
-const logger_1 = require("@shared/logger");
+const invoice_1 = require("../../../domains/invoice");
+const types_1 = require("../../../shared/types");
+const logger_1 = require("../../../shared/logger");
 function createInvoiceRoutes(invoiceRepo, invoiceService, eventBus) {
     const router = (0, express_1.Router)();
     // POST /invoices - Create a new invoice
@@ -136,6 +136,52 @@ function createInvoiceRoutes(invoiceRepo, invoiceService, eventBus) {
         catch (error) {
             logger_1.logger.error('Failed to pay invoice', { error: error.message, id: req.params.id });
             res.status(400).json({ error: error.message });
+        }
+    });
+    // PATCH /invoices/:id - Update invoice
+    router.patch('/:id', async (req, res) => {
+        try {
+            const invoice = await invoiceRepo.findById(req.params.id);
+            if (!invoice)
+                return res.status(404).json({ error: 'Invoice not found' });
+            const { customerName, customerAddress, dueDate, notes } = req.body;
+            invoice.updateInfo({
+                customerName: customerName !== undefined ? String(customerName) : undefined,
+                customerAddress: customerAddress !== undefined ? String(customerAddress) : undefined,
+                dueDate: dueDate !== undefined ? new Date(dueDate) : undefined,
+                notes: notes !== undefined ? String(notes) : undefined,
+            });
+            await invoiceRepo.save(invoice);
+            logger_1.logger.info('Invoice updated', { id: invoice.id });
+            res.json({
+                id: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                customerName: invoice.customerName,
+                totalAmount: invoice.totalAmount.amount,
+                vatAmount: invoice.totalVat.amount,
+                grandTotal: invoice.totalAmount.amount + invoice.totalVat.amount,
+                status: invoice.status,
+                dueDate: invoice.dueDate,
+            });
+        }
+        catch (error) {
+            logger_1.logger.error('Failed to update invoice', { error: error.message, id: req.params.id });
+            res.status(400).json({ error: error.message });
+        }
+    });
+    // DELETE /invoices/:id - Delete invoice
+    router.delete('/:id', async (req, res) => {
+        try {
+            const invoice = await invoiceRepo.findById(req.params.id);
+            if (!invoice)
+                return res.status(404).json({ error: 'Invoice not found' });
+            await invoiceRepo.delete(req.params.id);
+            logger_1.logger.info('Invoice deleted', { id: req.params.id });
+            res.status(204).send();
+        }
+        catch (error) {
+            logger_1.logger.error('Failed to delete invoice', { error: error.message, id: req.params.id });
+            res.status(500).json({ error: error.message });
         }
     });
     return router;

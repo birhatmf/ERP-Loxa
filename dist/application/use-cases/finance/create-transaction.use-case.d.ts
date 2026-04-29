@@ -1,6 +1,6 @@
-import { EventBus } from '@shared/types';
-import { Transaction, TransactionType, PaymentMethod } from '@domains/finance';
-import { ITransactionRepository } from '@domains/finance';
+import { EventBus } from '../../../shared/types';
+import { Transaction, TransactionType, PaymentMethod } from '../../../domains/finance';
+import { ITransactionRepository } from '../../../domains/finance';
 /**
  * CreateTransaction Use Case
  * Handles the creation of a new financial transaction.
@@ -19,6 +19,7 @@ export declare class CreateTransaction {
         createdBy: string;
         relatedProjectId?: string;
         currency?: string;
+        createdAt?: Date;
     }): Promise<Transaction>;
 }
 export declare class UpdateTransaction {
@@ -33,8 +34,10 @@ export declare class UpdateTransaction {
         paymentMethod?: PaymentMethod;
         isInvoiced?: boolean;
         description?: string;
+        createdBy?: string;
         relatedProjectId?: string | null;
         currency?: string;
+        createdAt?: Date;
     }): Promise<Transaction>;
 }
 export declare class CancelTransaction {

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CheckOverdueEvent = exports.CheckCancelledEvent = exports.CheckBouncedEvent = exports.CheckPaidEvent = exports.CheckCreatedEvent = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 /**
  * Fired when a new check is created.
  */

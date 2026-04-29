@@ -9,9 +9,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
-  const [name, setName] = useState('');
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,11 +18,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (isRegister) {
-        await register(username, password, name, 'user');
-      } else {
-        await login(username, password);
-      }
+      await login(username, password);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Giriş başarısız');
@@ -64,10 +58,10 @@ export default function LoginPage() {
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            {isRegister ? 'Hesap Oluştur' : 'Hoş Geldiniz'}
+            Hoş Geldiniz
           </h2>
           <p className="text-gray-500 text-sm mb-8">
-            {isRegister ? 'Yeni hesabınızı oluşturun' : 'Devam etmek için giriş yapın'}
+            Devam etmek için giriş yapın
           </p>
 
           {error && (
@@ -77,20 +71,6 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegister && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Ad Soyad</label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="Adınız Soyadınız"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Kullanıcı Adı</label>
               <input
@@ -134,21 +114,11 @@ export default function LoginPage() {
               ) : (
                 <>
                   <LogIn size={16} />
-                  {isRegister ? 'Kayıt Ol' : 'Giriş Yap'}
+                  Giriş Yap
                 </>
               )}
             </button>
           </form>
-
-          <p className="mt-6 text-center text-sm text-gray-500">
-            {isRegister ? 'Zaten hesabınız var mı?' : 'Hesabınız yok mu?'}{' '}
-            <button
-              onClick={() => { setIsRegister(!isRegister); setError(''); }}
-              className="text-brand-600 font-medium hover:text-brand-700"
-            >
-              {isRegister ? 'Giriş Yap' : 'Kayıt Ol'}
-            </button>
-          </p>
         </div>
       </div>
     </div>

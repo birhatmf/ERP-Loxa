@@ -1,4 +1,4 @@
-import { Entity, Money } from '@shared/types';
+import { Entity, Money } from '../../../shared/types';
 interface InvoiceItemProps {
     id: string;
     invoiceId: string;

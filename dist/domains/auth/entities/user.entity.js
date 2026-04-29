@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = exports.UserRole = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const crypto = __importStar(require("crypto"));
 var UserRole;
 (function (UserRole) {

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CancelTransaction = exports.UpdateTransaction = exports.CreateTransaction = void 0;
-const types_1 = require("@shared/types");
-const finance_1 = require("@domains/finance");
+const types_1 = require("../../../shared/types");
+const finance_1 = require("../../../domains/finance");
 /**
  * CreateTransaction Use Case
  * Handles the creation of a new financial transaction.
@@ -24,6 +24,7 @@ class CreateTransaction {
             description: params.description,
             createdBy: params.createdBy,
             relatedProjectId: params.relatedProjectId,
+            createdAt: params.createdAt,
         });
         await this.transactionRepo.save(transaction);
         await this.eventBus.publishAll(transaction.domainEvents);
@@ -51,7 +52,9 @@ class UpdateTransaction {
             paymentMethod: params.paymentMethod,
             isInvoiced: params.isInvoiced,
             description: params.description,
+            createdBy: params.createdBy,
             relatedProjectId: params.relatedProjectId,
+            createdAt: params.createdAt,
         });
         await this.transactionRepo.save(transaction);
         await this.eventBus.publishAll(transaction.domainEvents);

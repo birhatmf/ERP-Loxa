@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvoiceItem = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 /**
  * InvoiceItem Entity.
  * A line item on an invoice.

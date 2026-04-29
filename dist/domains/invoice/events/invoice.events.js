@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvoiceCancelledEvent = exports.InvoiceOverdueEvent = exports.InvoicePaidEvent = exports.InvoiceSentEvent = exports.InvoiceCreatedEvent = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 /**
  * Fired when an invoice is created.
  */

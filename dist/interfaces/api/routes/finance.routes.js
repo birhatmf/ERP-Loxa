@@ -2,13 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createFinanceRoutes = createFinanceRoutes;
 const express_1 = require("express");
-const logger_1 = require("@shared/logger");
+const logger_1 = require("../../../shared/logger");
 function createFinanceRoutes(createTransaction, updateTransaction, cancelTransaction, cashService, transactionRepo) {
     const router = (0, express_1.Router)();
     // POST /transactions - Create a new transaction
     router.post('/transactions', async (req, res) => {
         try {
-            const { amount, vatAmount, type, paymentMethod, isInvoiced, description, createdBy, relatedProjectId } = req.body;
+            const { amount, vatAmount, type, paymentMethod, isInvoiced, description, createdBy, relatedProjectId, createdAt } = req.body;
             const transaction = await createTransaction.execute({
                 amount,
                 vatAmount,
@@ -18,6 +18,7 @@ function createFinanceRoutes(createTransaction, updateTransaction, cancelTransac
                 description,
                 createdBy,
                 relatedProjectId,
+                createdAt: createdAt ? new Date(createdAt) : undefined,
             });
             logger_1.logger.info('Transaction created', { id: transaction.id, type: transaction.type, amount: transaction.amount.amount });
             res.status(201).json({
@@ -51,6 +52,7 @@ function createFinanceRoutes(createTransaction, updateTransaction, cancelTransac
                 createdBy: t.createdBy,
                 relatedProjectId: t.relatedProjectId,
                 createdAt: t.createdAt,
+                updatedAt: t.updatedAt,
             })));
         }
         catch (error) {
@@ -88,7 +90,9 @@ function createFinanceRoutes(createTransaction, updateTransaction, cancelTransac
                 paymentMethod: req.body.paymentMethod,
                 isInvoiced: req.body.isInvoiced,
                 description: req.body.description,
+                createdBy: req.body.createdBy,
                 relatedProjectId: req.body.relatedProjectId ?? undefined,
+                createdAt: req.body.createdAt ? new Date(req.body.createdAt) : undefined,
             });
             res.json({
                 id: transaction.id,
@@ -102,6 +106,7 @@ function createFinanceRoutes(createTransaction, updateTransaction, cancelTransac
                 createdBy: transaction.createdBy,
                 relatedProjectId: transaction.relatedProjectId,
                 createdAt: transaction.createdAt,
+                updatedAt: transaction.updatedAt,
             });
         }
         catch (error) {

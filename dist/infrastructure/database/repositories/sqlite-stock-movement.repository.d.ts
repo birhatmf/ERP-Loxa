@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { IStockMovementRepository, StockMovement, StockMovementType } from '@domains/inventory';
+import { IStockMovementRepository, StockMovement, StockMovementType } from '../../../domains/inventory';
 export declare class SqliteStockMovementRepository implements IStockMovementRepository {
     private knex;
     constructor(knex: Knex);

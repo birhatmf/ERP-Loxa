@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PayCheck = exports.CreateCheck = void 0;
-const types_1 = require("@shared/types");
-const payment_1 = require("@domains/payment");
-const finance_1 = require("@domains/finance");
+const types_1 = require("../../../shared/types");
+const payment_1 = require("../../../domains/payment");
+const finance_1 = require("../../../domains/finance");
 /**
  * CreateCheck Use Case
  * Creates a new check/deferred payment.

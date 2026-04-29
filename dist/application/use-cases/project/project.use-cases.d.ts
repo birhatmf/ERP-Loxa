@@ -1,7 +1,7 @@
-import { EventBus } from '@shared/types';
-import { Project, ProjectStatus } from '@domains/project';
-import { IProjectFileRepository, IProjectRepository } from '@domains/project';
-import { StockService } from '@domains/inventory';
+import { EventBus } from '../../../shared/types';
+import { Project, ProjectStatus } from '../../../domains/project';
+import { IProjectFileRepository, IProjectRepository } from '../../../domains/project';
+import { StockService } from '../../../domains/inventory';
 /**
  * CreateProject Use Case
  * Creates a new project with initial info.

@@ -1,7 +1,7 @@
-import { Money, EventBus } from '@shared/types';
+import { Money, EventBus } from '../../../shared/types';
 import { Check } from '../entities/check.entity';
 import { ICheckRepository } from '../repositories/check.repository';
-import { AuditService } from '@shared/audit/audit.service';
+import { AuditService } from '../../../shared/audit/audit.service';
 /**
  * CheckService - Domain Service
  * Manages check lifecycle and due date monitoring.

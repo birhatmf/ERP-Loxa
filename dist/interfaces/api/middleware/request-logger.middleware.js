@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createRequestLogger = createRequestLogger;
-const logger_1 = require("@shared/logger");
+const logger_1 = require("../../../shared/logger");
 const SENSITIVE_KEYS = new Set([
     'password',
     'passwordHash',

@@ -16,6 +16,7 @@ exports.knexConfig = {
     useNullAsDefault: true,
     migrations: {
         directory: path_1.default.join(__dirname, 'migrations'),
+        loadExtensions: [path_1.default.extname(__filename)],
     },
     seeds: {
         directory: path_1.default.join(__dirname, 'seeds'),

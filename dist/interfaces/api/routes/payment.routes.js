@@ -40,59 +40,16 @@ exports.createPaymentRoutes = createPaymentRoutes;
 const express_1 = __importStar(require("express"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const payment_1 = require("@domains/payment");
-const types_1 = require("@shared/types");
-const logger_1 = require("@shared/logger");
+const payment_1 = require("../../../domains/payment");
+const types_1 = require("../../../shared/types");
+const logger_1 = require("../../../shared/logger");
+const file_1 = require("../../../shared/utils/file");
 function getCheckFilesDir() {
     const dir = path_1.default.join(process.cwd(), 'data', 'check-files');
     if (!fs_1.default.existsSync(dir)) {
         fs_1.default.mkdirSync(dir, { recursive: true });
     }
     return dir;
-}
-function sanitizeFilename(name) {
-    return name
-        .replace(/[^\w.\-()\s]/g, '_')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .replace(/^_+|_+$/g, '') || 'file';
-}
-function parseMultipartFile(body, contentType) {
-    const boundaryMatch = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType ?? '');
-    if (!boundaryMatch) {
-        throw new Error('Multipart boundary not found');
-    }
-    const boundary = `--${boundaryMatch[1] ?? boundaryMatch[2]}`;
-    const raw = body.toString('latin1');
-    const parts = raw.split(boundary);
-    for (const part of parts) {
-        const trimmed = part.replace(/^\r\n/, '').replace(/\r\n$/, '');
-        if (!trimmed || trimmed === '--')
-            continue;
-        const headerEnd = trimmed.indexOf('\r\n\r\n');
-        if (headerEnd === -1)
-            continue;
-        const headerText = trimmed.slice(0, headerEnd);
-        const contentText = trimmed.slice(headerEnd + 4).replace(/\r\n$/, '');
-        const headers = headerText.split('\r\n');
-        const disposition = headers.find(h => h.toLowerCase().startsWith('content-disposition'));
-        if (!disposition || !disposition.includes('filename=')) {
-            continue;
-        }
-        const filenameMatch = /filename="([^"]*)"/i.exec(disposition);
-        const typeHeader = headers.find(h => h.toLowerCase().startsWith('content-type'));
-        const originalName = filenameMatch?.[1] || 'file';
-        return {
-            originalName,
-            storedName: sanitizeFilename(originalName),
-            mimeType: typeHeader?.split(':')[1]?.trim() || 'application/octet-stream',
-            buffer: Buffer.from(contentText, 'latin1'),
-        };
-    }
-    throw new Error('No file found in multipart payload');
-}
-function isImageMimeType(mimeType) {
-    return mimeType.startsWith('image/');
 }
 function mapCheck(check, fileCount = 0) {
     return {
@@ -222,9 +179,9 @@ function createPaymentRoutes(createCheck, payCheck, checkRepo, checkFileRepo, tr
             }
             const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body ?? '');
             const contentType = req.headers['content-type'];
-            const file = parseMultipartFile(body, Array.isArray(contentType) ? contentType[0] : contentType);
-            if (!isImageMimeType(file.mimeType)) {
-                return res.status(400).json({ error: 'Only image uploads are allowed' });
+            const file = (0, file_1.parseMultipartFile)(body, Array.isArray(contentType) ? contentType[0] : contentType);
+            if (!(0, file_1.isValidPaymentFile)(file.mimeType, file.extension)) {
+                return res.status(400).json({ error: 'Invalid file format. Only images are allowed for checks.' });
             }
             const fileId = (0, types_1.generateId)();
             const storageDir = getCheckFilesDir();

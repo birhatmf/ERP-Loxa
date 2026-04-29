@@ -1,4 +1,4 @@
-import { DomainEvent, Money } from '@shared/types';
+import { DomainEvent, Money } from '../../../shared/types';
 /**
  * Fired when an invoice is created.
  */

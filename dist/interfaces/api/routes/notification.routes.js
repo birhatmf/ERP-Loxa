@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createNotificationRoutes = createNotificationRoutes;
 const express_1 = require("express");
-const logger_1 = require("@shared/logger");
+const logger_1 = require("../../../shared/logger");
 function createNotificationRoutes(notificationRepo) {
     const router = (0, express_1.Router)();
     router.get('/', async (_req, res) => {

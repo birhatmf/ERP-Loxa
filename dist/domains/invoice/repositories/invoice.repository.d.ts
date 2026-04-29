@@ -1,4 +1,4 @@
-import { IRepository } from '@shared/types/repository.interface';
+import { IRepository } from '../../../shared/types/repository.interface';
 import { Invoice } from '../entities/invoice.entity';
 import { InvoiceStatus } from '../entities/invoice.enums';
 export interface IInvoiceRepository extends IRepository<Invoice> {

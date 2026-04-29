@@ -1,4 +1,4 @@
-import { Money } from '@shared/types';
+import { Money } from '../../../shared/types';
 import { Transaction } from '../entities/transaction.entity';
 import { PaymentMethod } from '../entities/transaction.enums';
 /**

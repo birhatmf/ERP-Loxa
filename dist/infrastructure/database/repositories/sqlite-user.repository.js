@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteUserRepository = void 0;
-const user_entity_1 = require("@domains/auth/entities/user.entity");
+const user_entity_1 = require("../../../domains/auth/entities/user.entity");
 class SqliteUserRepository {
     knex;
     constructor(knex) {

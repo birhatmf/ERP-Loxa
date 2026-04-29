@@ -1,8 +1,8 @@
-import { EventBus } from '@shared/types';
-import { Check, CheckType } from '@domains/payment';
-import { ICheckRepository } from '@domains/payment';
-import { Transaction } from '@domains/finance';
-import { ITransactionRepository } from '@domains/finance';
+import { EventBus } from '../../../shared/types';
+import { Check, CheckType } from '../../../domains/payment';
+import { ICheckRepository } from '../../../domains/payment';
+import { Transaction } from '../../../domains/finance';
+import { ITransactionRepository } from '../../../domains/finance';
 /**
  * CreateCheck Use Case
  * Creates a new check/deferred payment.

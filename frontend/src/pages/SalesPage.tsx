@@ -13,6 +13,8 @@ interface Sale {
   paymentStatus: 'bekliyor' | 'kısmi' | 'ödendi';
   paymentMethod: string;
   paymentNote: string;
+  paidAmount?: number;
+  remainingAmount?: number;
   description: string;
   createdAt: string;
 }
@@ -37,7 +39,7 @@ export default function SalesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showReceipt, setShowReceipt] = useState<Sale | null>(null);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
-  const [editForm, setEditForm] = useState({ paymentMethod: 'nakit', paymentStatus: 'bekliyor', paymentNote: '', description: '' });
+  const [editForm, setEditForm] = useState({ paymentMethod: 'nakit', paymentStatus: 'bekliyor', paymentNote: '', description: '', paidAmount: '' });
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     customerName: '',
@@ -45,6 +47,7 @@ export default function SalesPage() {
     customerAddress: '',
     paymentMethod: 'nakit',
     paymentStatus: 'bekliyor',
+    paidAmount: '',
     paymentNote: '',
     description: '',
     items: [{ description: '', quantity: '1', unitPrice: '' }],
@@ -95,7 +98,7 @@ export default function SalesPage() {
       setShowForm(false);
       setForm({
         customerName: '', customerPhone: '', customerAddress: '',
-        paymentMethod: 'nakit', paymentStatus: 'bekliyor', paymentNote: '', description: '',
+        paymentMethod: 'nakit', paymentStatus: 'bekliyor', paidAmount: '', paymentNote: '', description: '',
         items: [{ description: '', quantity: '1', unitPrice: '' }],
       });
       fetchSales();
@@ -116,6 +119,8 @@ export default function SalesPage() {
         })),
         totalAmount,
         paymentStatus: form.paymentStatus as any,
+        paidAmount: form.paymentStatus === 'ödendi' ? totalAmount : parseFloat(form.paidAmount) || 0,
+        remainingAmount: form.paymentStatus === 'ödendi' ? 0 : Math.max(totalAmount - (parseFloat(form.paidAmount) || 0), 0),
         paymentMethod: form.paymentMethod,
         paymentNote: form.paymentNote,
         description: form.description,
@@ -125,7 +130,7 @@ export default function SalesPage() {
       setShowForm(false);
       setForm({
         customerName: '', customerPhone: '', customerAddress: '',
-        paymentMethod: 'nakit', paymentStatus: 'bekliyor', paymentNote: '', description: '',
+        paymentMethod: 'nakit', paymentStatus: 'bekliyor', paidAmount: '', paymentNote: '', description: '',
         items: [{ description: '', quantity: '1', unitPrice: '' }],
       });
     }
@@ -199,6 +204,7 @@ export default function SalesPage() {
       paymentStatus: sale.paymentStatus,
       paymentNote: sale.paymentNote,
       description: sale.description,
+      paidAmount: '',
     });
   };
 
@@ -245,12 +251,13 @@ export default function SalesPage() {
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Ödeme</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Durum</th>
                 <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Tutar</th>
+                <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Tahsilat</th>
                 <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sales.length === 0 ? (
-                <tr><td colSpan={7} className="text-center text-sm text-gray-500 py-8">
+                <tr><td colSpan={8} className="text-center text-sm text-gray-500 py-8">
                   <ShoppingCart size={32} className="mx-auto text-gray-300 mb-3" />
                   Henüz satış kaydı yok
                 </td></tr>
@@ -270,6 +277,10 @@ export default function SalesPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">{formatCurrency(s.totalAmount)}</td>
+                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                      <p className="text-sm font-semibold text-emerald-700">{formatCurrency(s.paidAmount || 0)}</p>
+                      {(s.remainingAmount || 0) > 0 && <p className="text-xs text-gray-400">Kalan {formatCurrency(s.remainingAmount || 0)}</p>}
+                    </td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => openEdit(s)} className="rounded p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50" title="Düzenle">
@@ -377,6 +388,12 @@ export default function SalesPage() {
                     </select>
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Alınan Ödeme</label>
+                    <input type="number" step="0.01" min="0" max={calcTotal()} className="input" placeholder={form.paymentStatus === 'ödendi' ? formatCurrency(calcTotal()) : '0.00'} value={form.paidAmount} onChange={e => setForm({...form, paidAmount: e.target.value})} disabled={form.paymentStatus === 'bekliyor'} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 mt-3">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Ödeme Notu</label>
                     <input type="text" className="input" placeholder="Örn: Çek no, taksit detayı..." value={form.paymentNote} onChange={e => setForm({...form, paymentNote: e.target.value})} />
                   </div>
@@ -475,6 +492,11 @@ export default function SalesPage() {
                   <option value="kısmi">Kısmi Ödeme Alındı</option>
                   <option value="ödendi">Tam Ödendi</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Yeni Tahsilat Tutarı</label>
+                <input type="number" step="0.01" min="0" max={editingSale.remainingAmount || editingSale.totalAmount} className="input" placeholder={`Kalan ${formatCurrency(editingSale.remainingAmount || editingSale.totalAmount)}`} value={editForm.paidAmount} onChange={e => setEditForm({...editForm, paidAmount: e.target.value})} />
+                <p className="text-xs text-gray-500 mt-1">Girilen tutar bugün kasaya gelir olarak işlenir.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>

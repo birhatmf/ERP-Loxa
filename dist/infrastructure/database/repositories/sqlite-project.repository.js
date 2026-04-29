@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteProjectRepository = void 0;
-const project_1 = require("@domains/project");
-const types_1 = require("@shared/types");
+const project_1 = require("../../../domains/project");
+const types_1 = require("../../../shared/types");
 /**
  * SQLite implementation of Project repository.
  */

@@ -97,11 +97,8 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Projeler</h1>
-          <p className="text-gray-500 text-sm mt-1">Proje ve maliyet takibi</p>
+          <p className="text-gray-500 text-sm mt-1">Satışlardan otomatik oluşan proje ve maliyet takibi</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary">
-          <Plus size={16} /> Yeni Proje
-        </button>
       </div>
 
       {/* Projects Table */}

@@ -17,7 +17,7 @@ export function createFinanceRoutes(
   // POST /transactions - Create a new transaction
   router.post('/transactions', async (req: Request, res: Response) => {
     try {
-      const { amount, vatAmount, type, paymentMethod, isInvoiced, description, createdBy, relatedProjectId } = req.body;
+      const { amount, vatAmount, type, paymentMethod, isInvoiced, description, createdBy, relatedProjectId, createdAt } = req.body;
 
       const transaction = await createTransaction.execute({
         amount,
@@ -28,6 +28,7 @@ export function createFinanceRoutes(
         description,
         createdBy,
         relatedProjectId,
+        createdAt: createdAt ? new Date(createdAt) : undefined,
       });
 
       logger.info('Transaction created', { id: transaction.id, type: transaction.type, amount: transaction.amount.amount });
@@ -62,6 +63,7 @@ export function createFinanceRoutes(
         createdBy: t.createdBy,
         relatedProjectId: t.relatedProjectId,
         createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
       })));
     } catch (error: any) {
       logger.error('Failed to list transactions', { error: error.message });
@@ -100,7 +102,9 @@ export function createFinanceRoutes(
         paymentMethod: req.body.paymentMethod as PaymentMethod | undefined,
         isInvoiced: req.body.isInvoiced,
         description: req.body.description,
+        createdBy: req.body.createdBy,
         relatedProjectId: req.body.relatedProjectId ?? undefined,
+        createdAt: req.body.createdAt ? new Date(req.body.createdAt) : undefined,
       });
 
       res.json({
@@ -115,6 +119,7 @@ export function createFinanceRoutes(
         createdBy: transaction.createdBy,
         relatedProjectId: transaction.relatedProjectId,
         createdAt: transaction.createdAt,
+        updatedAt: transaction.updatedAt,
       });
     } catch (error: any) {
       logger.error('Failed to update transaction', { error: error.message, id: req.params.id, body: req.body });

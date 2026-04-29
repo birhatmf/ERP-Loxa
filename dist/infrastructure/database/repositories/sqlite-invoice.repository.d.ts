@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { Invoice, InvoiceStatus } from '@domains/invoice';
-import { IInvoiceRepository } from '@domains/invoice';
+import { Invoice, InvoiceStatus } from '../../../domains/invoice';
+import { IInvoiceRepository } from '../../../domains/invoice';
 export declare class SqliteInvoiceRepository implements IInvoiceRepository {
     private knex;
     constructor(knex: Knex);

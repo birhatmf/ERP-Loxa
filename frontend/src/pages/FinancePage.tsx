@@ -9,16 +9,24 @@ const PAYMENT_METHODS: Record<string, { label: string; icon: React.ReactNode }> 
   kart: { label: 'Kart', icon: <CreditCard size={14} /> },
 };
 
+function toDateTimeLocal(value: Date | string = new Date()): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
 export default function FinancePage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [balance, setBalance] = useState<CashBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [personFilter, setPersonFilter] = useState('');
   const [form, setForm] = useState({
     amount: '', vatAmount: '', type: 'income' as 'income' | 'expense',
     paymentMethod: 'nakit' as 'nakit' | 'havale' | 'kart',
-    isInvoiced: false, description: '', createdBy: '',
+    isInvoiced: false, description: '', createdBy: '', createdAt: toDateTimeLocal(),
   });
   const [editForm, setEditForm] = useState({
     amount: '',
@@ -27,6 +35,8 @@ export default function FinancePage() {
     paymentMethod: 'nakit' as 'nakit' | 'havale' | 'kart',
     isInvoiced: false,
     description: '',
+    createdBy: '',
+    createdAt: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,6 +52,39 @@ export default function FinancePage() {
 
   useEffect(() => { fetchData(); }, []);
 
+  const personOptions = Array.from(
+    new Set(transactions.map(tx => tx.createdBy?.trim()).filter((name): name is string => Boolean(name)))
+  ).sort((a, b) => a.localeCompare(b, 'tr'));
+
+  const visibleTransactions = personFilter
+    ? transactions.filter(tx => tx.createdBy === personFilter)
+    : transactions;
+
+  const visibleSummary = personFilter
+    ? visibleTransactions.reduce(
+        (summary, tx) => {
+          if (tx.type === 'income') summary.totalIncome += tx.amount;
+          if (tx.type === 'expense') summary.totalExpenses += tx.amount;
+          summary.netBalance = summary.totalIncome - summary.totalExpenses;
+          return summary;
+        },
+        { totalIncome: 0, totalExpenses: 0, netBalance: 0 }
+      )
+    : {
+        totalIncome: balance?.totalIncome || 0,
+        totalExpenses: balance?.totalExpenses || 0,
+        netBalance: balance?.netBalance || 0,
+      };
+
+  const openCreate = () => {
+    setForm(prev => ({
+      ...prev,
+      createdBy: personFilter || prev.createdBy,
+      createdAt: prev.createdAt || toDateTimeLocal(),
+    }));
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -50,9 +93,10 @@ export default function FinancePage() {
         ...form,
         amount: parseFloat(form.amount),
         vatAmount: parseFloat(form.vatAmount) || 0,
+        createdAt: form.createdAt ? new Date(form.createdAt).toISOString() : undefined,
       });
       setShowForm(false);
-      setForm({ amount: '', vatAmount: '', type: 'income', paymentMethod: 'nakit', isInvoiced: false, description: '', createdBy: '' });
+      setForm({ amount: '', vatAmount: '', type: 'income', paymentMethod: 'nakit', isInvoiced: false, description: '', createdBy: personFilter, createdAt: toDateTimeLocal() });
       fetchData();
     } finally {
       setSubmitting(false);
@@ -68,6 +112,8 @@ export default function FinancePage() {
       paymentMethod: tx.paymentMethod,
       isInvoiced: tx.isInvoiced,
       description: tx.description,
+      createdBy: tx.createdBy,
+      createdAt: toDateTimeLocal(tx.createdAt),
     });
   };
 
@@ -84,6 +130,8 @@ export default function FinancePage() {
         paymentMethod: editForm.paymentMethod,
         isInvoiced: editForm.isInvoiced,
         description: editForm.description,
+        createdBy: editForm.createdBy,
+        createdAt: editForm.createdAt ? new Date(editForm.createdAt).toISOString() : undefined,
       });
       setTransactions(prev => prev.map(tx => tx.id === editingTransaction.id ? { ...tx, ...data } : tx));
       setEditingTransaction(null);
@@ -121,7 +169,7 @@ export default function FinancePage() {
           <h1 className="text-2xl font-bold text-gray-900">Kasa Yönetimi</h1>
           <p className="text-gray-500 text-sm mt-1">Gelir ve gider takibi</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary">
+        <button onClick={openCreate} className="btn btn-primary">
           <Plus size={16} /> Yeni İşlem
         </button>
       </div>
@@ -130,8 +178,8 @@ export default function FinancePage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5">
           <p className="text-sm text-gray-500 mb-1">Net Bakiye</p>
-          <p className={`text-2xl font-bold ${(balance?.netBalance || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-            {formatCurrency(balance?.netBalance || 0)}
+          <p className={`text-2xl font-bold ${visibleSummary.netBalance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            {formatCurrency(visibleSummary.netBalance)}
           </p>
         </div>
         <div className="card p-5">
@@ -139,27 +187,42 @@ export default function FinancePage() {
             <ArrowUpRight size={14} className="text-emerald-500" />
             <p className="text-sm text-gray-500">Toplam Gelir</p>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">{formatCurrency(balance?.totalIncome || 0)}</p>
+          <p className="text-2xl font-bold text-emerald-600">{formatCurrency(visibleSummary.totalIncome)}</p>
         </div>
         <div className="card p-5">
           <div className="flex items-center gap-2 mb-1">
             <ArrowDownRight size={14} className="text-red-500" />
             <p className="text-sm text-gray-500">Toplam Gider</p>
           </div>
-          <p className="text-2xl font-bold text-red-600">{formatCurrency(balance?.totalExpenses || 0)}</p>
+          <p className="text-2xl font-bold text-red-600">{formatCurrency(visibleSummary.totalExpenses)}</p>
         </div>
       </div>
 
+      <datalist id="finance-person-options">
+        {personOptions.map(person => <option key={person} value={person} />)}
+      </datalist>
+
       {/* Transactions Table */}
       <div className="card overflow-hidden">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Son İşlemler</h2>
+        <div className="flex flex-col gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-semibold text-gray-900">Son İşlemler</h2>
+            {personFilter && <p className="text-sm text-gray-500 mt-1">{personFilter} için {visibleTransactions.length} işlem listeleniyor</p>}
+          </div>
+          <div className="w-full sm:w-64">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Ödemeyi Yapan</label>
+            <select className="select" value={personFilter} onChange={e => setPersonFilter(e.target.value)}>
+              <option value="">Tüm kişiler</option>
+              {personOptions.map(person => <option key={person} value={person}>{person}</option>)}
+            </select>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Tarih</th>
+                <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Kişi</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Açıklama</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Tip</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3">Ödeme</th>
@@ -169,12 +232,13 @@ export default function FinancePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {transactions.length === 0 ? (
-                <tr><td colSpan={7} className="text-center text-sm text-gray-500 py-8">Henüz işlem bulunmuyor</td></tr>
+              {visibleTransactions.length === 0 ? (
+                <tr><td colSpan={8} className="text-center text-sm text-gray-500 py-8">Henüz işlem bulunmuyor</td></tr>
               ) : (
-                transactions.map(tx => (
+                visibleTransactions.map(tx => (
                   <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-3.5 text-sm text-gray-500 whitespace-nowrap">{formatDate(tx.createdAt)}</td>
+                    <td className="px-5 py-3.5 text-sm text-gray-600 whitespace-nowrap">{tx.createdBy || '-'}</td>
                     <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{tx.description || '-'}</td>
                     <td className="px-5 py-3.5">
                       <span className={`badge ${tx.type === 'income' ? 'badge-green' : 'badge-red'}`}>
@@ -249,6 +313,10 @@ export default function FinancePage() {
                   <input type="number" step="0.01" className="input" placeholder="0.00" value={form.vatAmount} onChange={e => setForm({...form, vatAmount: e.target.value})} />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">İşlem Tarihi</label>
+                <input type="datetime-local" className="input" value={form.createdAt} onChange={e => setForm({...form, createdAt: e.target.value})} required />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">İşlem Tipi</label>
@@ -271,8 +339,8 @@ export default function FinancePage() {
                 <input type="text" className="input" placeholder="İşlem açıklaması" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Oluşturan</label>
-                <input type="text" className="input" placeholder="Adınız" value={form.createdBy} onChange={e => setForm({...form, createdBy: e.target.value})} required />
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Ödemeyi Yapan</label>
+                <input type="text" list="finance-person-options" className="input" placeholder="Adınız" value={form.createdBy} onChange={e => setForm({...form, createdBy: e.target.value})} required />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="rounded border-gray-300 text-brand-600 focus:ring-brand-500" checked={form.isInvoiced} onChange={e => setForm({...form, isInvoiced: e.target.checked})} />
@@ -308,6 +376,10 @@ export default function FinancePage() {
                   <input type="number" step="0.01" className="input" value={editForm.vatAmount} onChange={e => setEditForm({...editForm, vatAmount: e.target.value})} />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">İşlem Tarihi</label>
+                <input type="datetime-local" className="input" value={editForm.createdAt} onChange={e => setEditForm({...editForm, createdAt: e.target.value})} required />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">İşlem Tipi</label>
@@ -328,6 +400,10 @@ export default function FinancePage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Açıklama</label>
                 <input type="text" className="input" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Ödemeyi Yapan</label>
+                <input type="text" list="finance-person-options" className="input" value={editForm.createdBy} onChange={e => setEditForm({...editForm, createdBy: e.target.value})} required />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="rounded border-gray-300 text-brand-600 focus:ring-brand-500" checked={editForm.isInvoiced} onChange={e => setEditForm({...editForm, isInvoiced: e.target.checked})} />

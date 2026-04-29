@@ -22,6 +22,7 @@ export class CreateTransaction {
     createdBy: string;
     relatedProjectId?: string;
     currency?: string;
+    createdAt?: Date;
   }): Promise<Transaction> {
     const transaction = Transaction.create({
       amount: Money.create(params.amount, params.currency),
@@ -32,6 +33,7 @@ export class CreateTransaction {
       description: params.description,
       createdBy: params.createdBy,
       relatedProjectId: params.relatedProjectId,
+      createdAt: params.createdAt,
     });
 
     await this.transactionRepo.save(transaction);
@@ -56,8 +58,10 @@ export class UpdateTransaction {
     paymentMethod?: PaymentMethod;
     isInvoiced?: boolean;
     description?: string;
+    createdBy?: string;
     relatedProjectId?: string | null;
     currency?: string;
+    createdAt?: Date;
   }): Promise<Transaction> {
     const transaction = await this.transactionRepo.findById(params.transactionId);
     if (!transaction) {
@@ -71,7 +75,9 @@ export class UpdateTransaction {
       paymentMethod: params.paymentMethod,
       isInvoiced: params.isInvoiced,
       description: params.description,
+      createdBy: params.createdBy,
       relatedProjectId: params.relatedProjectId,
+      createdAt: params.createdAt,
     });
 
     await this.transactionRepo.save(transaction);

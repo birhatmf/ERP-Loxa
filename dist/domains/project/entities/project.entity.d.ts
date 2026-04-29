@@ -1,4 +1,4 @@
-import { AggregateRoot, Money } from '@shared/types';
+import { AggregateRoot, Money } from '../../../shared/types';
 import { ProjectStatus } from './project.enums';
 import { ProjectItem } from './project-item.entity';
 interface ProjectProps {

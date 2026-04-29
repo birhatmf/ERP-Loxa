@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { AuditLogEntry } from '@shared/audit/audit.types';
-import { IAuditLogRepository } from '@shared/audit/audit.repository';
+import { AuditLogEntry } from '../../../shared/audit/audit.types';
+import { IAuditLogRepository } from '../../../shared/audit/audit.repository';
 export declare class SqliteAuditLogRepository implements IAuditLogRepository {
     private knex;
     constructor(knex: Knex);

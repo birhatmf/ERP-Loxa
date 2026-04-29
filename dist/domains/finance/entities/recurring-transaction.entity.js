@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RecurringTransaction = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const recurring_transaction_enums_1 = require("./recurring-transaction.enums");
 class RecurringTransaction extends types_1.AggregateRoot {
     _description;
@@ -72,6 +72,49 @@ class RecurringTransaction extends types_1.AggregateRoot {
     get lastRun() { return this._lastRun; }
     setActive(isActive) {
         this._isActive = isActive;
+        this.touch();
+    }
+    updateInfo(params) {
+        if (params.description !== undefined) {
+            if (!params.description.trim()) {
+                throw new types_1.BusinessRuleViolationError('Recurring description is required');
+            }
+            this._description = params.description.trim();
+        }
+        if (params.amount !== undefined) {
+            if (params.amount <= 0) {
+                throw new types_1.BusinessRuleViolationError('Recurring amount must be positive');
+            }
+            this._amount = types_1.Money.create(params.amount);
+        }
+        if (params.type !== undefined) {
+            this._type = params.type;
+        }
+        if (params.category !== undefined) {
+            if (!params.category.trim()) {
+                throw new types_1.BusinessRuleViolationError('Recurring category is required');
+            }
+            this._category = params.category.trim();
+        }
+        if (params.paymentMethod !== undefined) {
+            this._paymentMethod = params.paymentMethod;
+        }
+        if (params.frequency !== undefined) {
+            this._frequency = params.frequency;
+        }
+        if (params.dayOfMonth !== undefined) {
+            if (params.dayOfMonth < 1 || params.dayOfMonth > 28) {
+                throw new types_1.BusinessRuleViolationError('dayOfMonth must be between 1 and 28');
+            }
+            this._dayOfMonth = params.dayOfMonth;
+        }
+        if (params.frequency !== undefined ||
+            params.dayOfMonth !== undefined) {
+            this._nextRun = RecurringTransaction.calculateNextRun(new Date(), this._frequency, this._dayOfMonth);
+        }
+        if (params.isActive !== undefined) {
+            this._isActive = params.isActive;
+        }
         this.touch();
     }
     markRun(runDate = new Date()) {

@@ -88,29 +88,29 @@ frontend/                       # React + Vite + TypeScript Frontend
 # Backend
 cd erp-core
 npm install
-npm run dev    # http://localhost:3000
+npm run dev    # http://localhost:4051
 
 # Frontend
 cd frontend
 npm install
-npm run dev    # http://localhost:5173
+npm run dev    # http://localhost:4050
 ```
 
 ## 🔐 Authentication
 
 ```bash
 # Register
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:4051/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123","name":"Admin","role":"admin"}'
 
 # Login
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:4051/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
 # Use token in protected requests
-curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:3000/api/finance/transactions
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:4051/api/finance/transactions
 ```
 
 ## 📡 API Endpoints

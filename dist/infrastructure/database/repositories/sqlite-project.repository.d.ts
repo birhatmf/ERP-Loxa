@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { Project, ProjectStatus } from '@domains/project';
-import { IProjectRepository } from '@domains/project';
+import { Project, ProjectStatus } from '../../../domains/project';
+import { IProjectRepository } from '../../../domains/project';
 /**
  * SQLite implementation of Project repository.
  */

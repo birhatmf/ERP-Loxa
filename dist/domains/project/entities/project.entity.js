@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Project = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const project_enums_1 = require("./project.enums");
 const project_item_entity_1 = require("./project-item.entity");
 const project_events_1 = require("../events/project.events");

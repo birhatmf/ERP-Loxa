@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Check = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const payment_enums_1 = require("./payment.enums");
 const payment_events_1 = require("../events/payment.events");
 /**

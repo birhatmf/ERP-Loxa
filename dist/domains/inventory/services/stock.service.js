@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockService = void 0;
 const stock_movement_entity_1 = require("../entities/stock-movement.entity");
 const inventory_enums_1 = require("../entities/inventory.enums");
-const domain_errors_1 = require("@shared/errors/domain.errors");
+const domain_errors_1 = require("../../../shared/errors/domain.errors");
 /**
  * StockService - Domain Service
  * Manages stock operations, ensuring all stock changes go through movements.

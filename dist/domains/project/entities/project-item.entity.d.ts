@@ -1,4 +1,4 @@
-import { Entity, Money } from '@shared/types';
+import { Entity, Money } from '../../../shared/types';
 interface ProjectItemProps {
     id: string;
     projectId: string;

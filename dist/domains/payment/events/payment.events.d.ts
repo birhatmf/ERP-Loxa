@@ -1,4 +1,4 @@
-import { DomainEvent, Money } from '@shared/types';
+import { DomainEvent, Money } from '../../../shared/types';
 import { CheckType } from '../entities/payment.enums';
 /**
  * Fired when a new check is created.

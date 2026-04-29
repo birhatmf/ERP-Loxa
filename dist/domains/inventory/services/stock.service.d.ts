@@ -1,4 +1,4 @@
-import { EventBus } from '@shared/types';
+import { EventBus } from '../../../shared/types';
 import { Material } from '../entities/material.entity';
 import { StockMovement } from '../entities/stock-movement.entity';
 import { IMaterialRepository } from '../repositories/material.repository';

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SqliteCheckRepository = void 0;
-const payment_1 = require("@domains/payment");
-const types_1 = require("@shared/types");
+const payment_1 = require("../../../domains/payment");
+const types_1 = require("../../../shared/types");
 /**
  * SQLite implementation of Check repository.
  */

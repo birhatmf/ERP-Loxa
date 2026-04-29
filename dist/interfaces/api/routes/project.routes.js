@@ -38,10 +38,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createProjectRoutes = createProjectRoutes;
 const express_1 = __importStar(require("express"));
-const logger_1 = require("@shared/logger");
-const types_1 = require("@shared/types");
+const logger_1 = require("../../../shared/logger");
+const types_1 = require("../../../shared/types");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const file_1 = require("../../../shared/utils/file");
 function getProjectFilesDir() {
     const dir = path_1.default.join(process.cwd(), 'data', 'project-files');
     if (!fs_1.default.existsSync(dir)) {
@@ -49,50 +50,32 @@ function getProjectFilesDir() {
     }
     return dir;
 }
-function sanitizeFilename(name) {
-    return name
-        .replace(/[^\w.\-()\s]/g, '_')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .replace(/^_+|_+$/g, '') || 'file';
-}
-function parseMultipartFile(body, contentType) {
-    const boundaryMatch = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType ?? '');
-    if (!boundaryMatch) {
-        throw new Error('Multipart boundary not found');
-    }
-    const boundary = `--${boundaryMatch[1] ?? boundaryMatch[2]}`;
-    const raw = body.toString('latin1');
-    const parts = raw.split(boundary);
-    for (const part of parts) {
-        const trimmed = part.replace(/^\r\n/, '').replace(/\r\n$/, '');
-        if (!trimmed || trimmed === '--')
-            continue;
-        const headerEnd = trimmed.indexOf('\r\n\r\n');
-        if (headerEnd === -1)
-            continue;
-        const headerText = trimmed.slice(0, headerEnd);
-        const contentText = trimmed.slice(headerEnd + 4).replace(/\r\n$/, '');
-        const headers = headerText.split('\r\n');
-        const disposition = headers.find(h => h.toLowerCase().startsWith('content-disposition'));
-        if (!disposition || !disposition.includes('filename=')) {
-            continue;
-        }
-        const filenameMatch = /filename="([^"]*)"/i.exec(disposition);
-        const typeHeader = headers.find(h => h.toLowerCase().startsWith('content-type'));
-        const originalName = filenameMatch?.[1] || 'file';
-        return {
-            originalName,
-            storedName: sanitizeFilename(originalName),
-            mimeType: typeHeader?.split(':')[1]?.trim() || 'application/octet-stream',
-            buffer: Buffer.from(contentText, 'latin1'),
-        };
-    }
-    throw new Error('No file found in multipart payload');
-}
-function createProjectRoutes(createProject, addProjectItem, updateProjectInfo, deleteProject, updateProjectStatus, costService, projectRepo, projectFileRepo) {
+function createProjectRoutes(createProject, addProjectItem, updateProjectInfo, deleteProject, updateProjectStatus, costService, projectRepo, projectFileRepo, saleRepo) {
     const router = (0, express_1.Router)();
     const uploadParser = express_1.default.raw({ type: 'multipart/form-data', limit: '25mb' });
+    async function syncProjectsFromSales() {
+        if (!saleRepo)
+            return;
+        const [sales, projects] = await Promise.all([saleRepo.findAll(), projectRepo.findAll()]);
+        const existingSaleIds = new Set(projects
+            .map(project => project.description.match(/Kaynak satış: ([^\n]+)/)?.[1])
+            .filter((saleId) => Boolean(saleId)));
+        for (const sale of sales) {
+            if (existingSaleIds.has(sale.id))
+                continue;
+            const projectName = sale.description.trim()
+                || sale.items.map(item => item.description).filter(Boolean).join(', ')
+                || `Satış #${sale.id.slice(-8).toUpperCase()}`;
+            const project = await createProject.execute({
+                name: projectName,
+                customerName: sale.customerName,
+                description: `Kaynak satış: ${sale.id}${sale.description ? `\n${sale.description}` : ''}`,
+                startDate: sale.createdAt,
+                totalPrice: sale.totalAmount.amount,
+            });
+            logger_1.logger.info('Project synced from sale', { projectId: project.id, saleId: sale.id });
+        }
+    }
     // POST /projects - Create a new project
     router.post('/projects', async (req, res) => {
         try {
@@ -121,6 +104,7 @@ function createProjectRoutes(createProject, addProjectItem, updateProjectInfo, d
     // GET /projects - List all projects
     router.get('/projects', async (req, res) => {
         try {
+            await syncProjectsFromSales();
             const projects = await projectRepo.findAll();
             res.json(projects.map(p => ({
                 id: p.id,
@@ -273,7 +257,10 @@ function createProjectRoutes(createProject, addProjectItem, updateProjectInfo, d
             }
             const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body ?? '');
             const contentType = req.headers['content-type'];
-            const file = parseMultipartFile(body, Array.isArray(contentType) ? contentType[0] : contentType);
+            const file = (0, file_1.parseMultipartFile)(body, Array.isArray(contentType) ? contentType[0] : contentType);
+            if (!(0, file_1.isValidProjectFile)(file.mimeType, file.extension)) {
+                return res.status(400).json({ error: 'Invalid file format. Only images and documents are allowed.' });
+            }
             const fileId = (0, types_1.generateId)();
             const storageDir = getProjectFilesDir();
             const storagePath = path_1.default.join(storageDir, `${fileId}-${file.storedName}`);

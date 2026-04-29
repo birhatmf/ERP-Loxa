@@ -36,7 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const jwt = __importStar(require("jsonwebtoken"));
 const user_entity_1 = require("../entities/user.entity");
-const domain_errors_1 = require("@shared/errors/domain.errors");
+const domain_errors_1 = require("../../../shared/errors/domain.errors");
 const JWT_SECRET = process.env.JWT_SECRET || 'erp-core-jwt-secret-change-in-production';
 const JWT_EXPIRES_IN = '24h';
 /**
@@ -71,6 +71,10 @@ class AuthService {
             token,
             user: user.toSafeObject(),
         };
+    }
+    async hasUsers() {
+        const users = await this.userRepo.findAll();
+        return users.length > 0;
     }
     /**
      * Login with username and password.

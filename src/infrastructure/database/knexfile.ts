@@ -11,6 +11,7 @@ export const knexConfig: Knex.Config = {
   useNullAsDefault: true,
   migrations: {
     directory: path.join(__dirname, 'migrations'),
+    loadExtensions: [path.extname(__filename)],
   },
   seeds: {
     directory: path.join(__dirname, 'seeds'),

@@ -63,6 +63,11 @@ export class AuthService {
     };
   }
 
+  async hasUsers(): Promise<boolean> {
+    const users = await this.userRepo.findAll();
+    return users.length > 0;
+  }
+
   /**
    * Login with username and password.
    */

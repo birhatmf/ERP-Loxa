@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createProcurementRoutes = createProcurementRoutes;
 const express_1 = require("express");
-const logger_1 = require("@shared/logger");
-const types_1 = require("@shared/types");
-const sqlite_purchase_order_repository_1 = require("@infrastructure/database/repositories/sqlite-purchase-order.repository");
+const logger_1 = require("../../../shared/logger");
+const types_1 = require("../../../shared/types");
+const sqlite_purchase_order_repository_1 = require("../../../infrastructure/database/repositories/sqlite-purchase-order.repository");
 function normalizeOrderItems(items, materials) {
     return (items ?? []).map((item) => ({
         materialId: String(item.materialId ?? '').trim(),

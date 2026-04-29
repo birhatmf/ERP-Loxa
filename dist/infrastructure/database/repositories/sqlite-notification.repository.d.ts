@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { NotificationRecord } from '@shared/notifications/notification.types';
-import { INotificationRepository } from '@shared/notifications/notification.repository';
+import { NotificationRecord } from '../../../shared/notifications/notification.types';
+import { INotificationRepository } from '../../../shared/notifications/notification.repository';
 export declare class SqliteNotificationRepository implements INotificationRepository {
     private knex;
     constructor(knex: Knex);

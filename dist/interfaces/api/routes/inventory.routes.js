@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createInventoryRoutes = createInventoryRoutes;
 const express_1 = require("express");
-const inventory_1 = require("@domains/inventory");
-const logger_1 = require("@shared/logger");
+const inventory_1 = require("../../../domains/inventory");
+const logger_1 = require("../../../shared/logger");
 function createInventoryRoutes(createMaterial, addStock, stockService, materialRepo, purchaseOrderRepo, stockMovementRepo) {
     const router = (0, express_1.Router)();
     async function buildLatestPurchasePriceMap() {

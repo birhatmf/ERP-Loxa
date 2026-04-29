@@ -25,7 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
       // Verify token is still valid
-      api.get('/api/auth/me').catch(() => {
+      api.get<User>('/api/auth/me').then(({ data }) => {
+        localStorage.setItem('erp_user', JSON.stringify(data));
+        setUser(data);
+      }).catch(() => {
         localStorage.removeItem('erp_token');
         localStorage.removeItem('erp_user');
         setToken(null);

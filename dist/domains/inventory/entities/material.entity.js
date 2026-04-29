@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Material = void 0;
-const types_1 = require("@shared/types");
+const types_1 = require("../../../shared/types");
 const inventory_events_1 = require("../events/inventory.events");
 /**
  * Material Aggregate Root.

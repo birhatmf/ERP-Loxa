@@ -3,14 +3,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAuthRoutes = createAuthRoutes;
 const express_1 = require("express");
 const auth_middleware_1 = require("../middleware/auth.middleware");
-const logger_1 = require("@shared/logger");
+const logger_1 = require("../../../shared/logger");
 function createAuthRoutes(authService) {
     const router = (0, express_1.Router)();
     // POST /auth/register
     router.post('/register', async (req, res) => {
         try {
             const { username, password, name, role } = req.body;
-            const result = await authService.register({ username, password, name, role });
+            const hasUsers = await authService.hasUsers();
+            if (hasUsers) {
+                const authHeader = req.headers.authorization;
+                if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                    return res.status(403).json({ error: 'Admin access required' });
+                }
+                const requester = await authService.verifyToken(authHeader.substring(7));
+                if (!requester.isAdmin) {
+                    return res.status(403).json({ error: 'Admin access required' });
+                }
+            }
+            const result = await authService.register({
+                username,
+                password,
+                name,
+                role: hasUsers ? role : 'admin',
+            });
             logger_1.logger.info('User registered', { username: result.user.username, userId: result.user.id, role: result.user.role });
             res.status(201).json(result);
         }
