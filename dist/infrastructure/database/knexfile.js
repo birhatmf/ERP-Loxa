@@ -7,7 +7,24 @@ exports.knexConfig = void 0;
 exports.createConnection = createConnection;
 const knex_1 = __importDefault(require("knex"));
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const dbPath = path_1.default.join(process.cwd(), 'data', 'erp.db');
+class CustomMigrationSource {
+    async getMigrations() {
+        const ext = path_1.default.extname(__filename); // .ts or .js
+        const dir = path_1.default.join(__dirname, 'migrations');
+        return fs_1.default.readdirSync(dir)
+            .filter((file) => file.endsWith(ext))
+            .sort();
+    }
+    getMigrationName(migration) {
+        // Always use .ts as the name in the database for consistency
+        return migration.replace(/\.js$/, '.ts');
+    }
+    getMigration(migration) {
+        return require(path_1.default.join(__dirname, 'migrations', migration));
+    }
+}
 exports.knexConfig = {
     client: 'better-sqlite3',
     connection: {
@@ -15,8 +32,7 @@ exports.knexConfig = {
     },
     useNullAsDefault: true,
     migrations: {
-        directory: path_1.default.join(__dirname, 'migrations'),
-        loadExtensions: [path_1.default.extname(__filename)],
+        migrationSource: new CustomMigrationSource(),
     },
     seeds: {
         directory: path_1.default.join(__dirname, 'seeds'),

@@ -1,5 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { SqlitePayrollRepository } from '@infrastructure/database/repositories/sqlite-payroll.repository';
+import { CreateTransaction } from '@application/use-cases/finance/create-transaction.use-case';
+import { TransactionType, PaymentMethod } from '@domains/finance/entities/transaction.enums';
 import { logger } from '@shared/logger';
 
 function normalizePeriod(value: unknown): string {
@@ -22,7 +24,10 @@ function toAmount(value: unknown, label: string): number {
   return amount;
 }
 
-export function createPayrollRoutes(payrollRepo: SqlitePayrollRepository): Router {
+export function createPayrollRoutes(
+  payrollRepo: SqlitePayrollRepository,
+  createTransaction?: CreateTransaction
+): Router {
   const router = Router();
 
   router.get('/workers', async (_req: Request, res: Response) => {
@@ -118,6 +123,24 @@ export function createPayrollRoutes(payrollRepo: SqlitePayrollRepository): Route
         paidAt,
         note: String(req.body.note ?? ''),
       });
+
+      if (createTransaction) {
+        try {
+          await createTransaction.execute({
+            amount: advance.amount,
+            vatAmount: 0,
+            type: TransactionType.EXPENSE,
+            paymentMethod: PaymentMethod.CASH,
+            isInvoiced: false,
+            description: `Maaş Avansı: ${worker.name}${advance.note ? ` (${advance.note})` : ''}`,
+            createdBy: 'Sistem',
+            createdAt: paidAt
+          });
+          logger.info('Advance deducted from Kasa', { advanceId: advance.id, amount: advance.amount });
+        } catch (txError: any) {
+          logger.error('Failed to deduct advance from Kasa', { error: txError.message });
+        }
+      }
 
       logger.info('Worker advance created', { id: advance.id, workerId: worker.id, amount: advance.amount });
       res.status(201).json(advance);

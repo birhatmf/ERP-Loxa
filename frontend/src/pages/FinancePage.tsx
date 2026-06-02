@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import type { Transaction, CashBalance } from '../types';
-import { Plus, ArrowUpRight, ArrowDownRight, Banknote, CreditCard, Building2, X, Pencil, Trash2 } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, Banknote, CreditCard, Building2, X, Pencil, Trash2, Download, FileText } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
 
 const PAYMENT_METHODS: Record<string, { label: string; icon: React.ReactNode }> = {
   nakit: { label: 'Nakit', icon: <Banknote size={14} /> },
@@ -23,11 +32,14 @@ export default function FinancePage() {
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [personFilter, setPersonFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [form, setForm] = useState({
     amount: '', vatAmount: '', type: 'income' as 'income' | 'expense',
     paymentMethod: 'nakit' as 'nakit' | 'havale' | 'kart',
     isInvoiced: false, description: '', createdBy: '', createdAt: toDateTimeLocal(),
   });
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [editForm, setEditForm] = useState({
     amount: '',
     vatAmount: '',
@@ -56,11 +68,30 @@ export default function FinancePage() {
     new Set(transactions.map(tx => tx.createdBy?.trim()).filter((name): name is string => Boolean(name)))
   ).sort((a, b) => a.localeCompare(b, 'tr'));
 
-  const visibleTransactions = personFilter
-    ? transactions.filter(tx => tx.createdBy === personFilter)
-    : transactions;
+  const visibleTransactions = transactions.filter(tx => {
+    const matchPerson = personFilter ? tx.createdBy === personFilter : true;
+    const matchType = typeFilter ? tx.type === typeFilter : true;
+    const txDate = new Date(tx.createdAt);
+    
+    // Set hours to boundaries for inclusive date filtering
+    let matchStartDate = true;
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      matchStartDate = txDate >= start;
+    }
+    
+    let matchEndDate = true;
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      matchEndDate = txDate <= end;
+    }
+    
+    return matchPerson && matchType && matchStartDate && matchEndDate;
+  });
 
-  const visibleSummary = personFilter
+  const visibleSummary = (personFilter || typeFilter)
     ? visibleTransactions.reduce(
         (summary, tx) => {
           if (tx.type === 'income') summary.totalIncome += tx.amount;
@@ -158,6 +189,111 @@ export default function FinancePage() {
   const formatCurrency = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
   const formatDate = (d: string) => new Date(d).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+  const handleExportExcel = () => {
+    const incomes = visibleTransactions.filter(tx => tx.type === 'income');
+    const expenses = visibleTransactions.filter(tx => tx.type === 'expense');
+
+    const mapTx = (tx: Transaction) => ({
+      'Tarih': formatDate(tx.createdAt),
+      'Kişi': tx.createdBy || '-',
+      'Açıklama': tx.description || '-',
+      'Ödeme Yöntemi': PAYMENT_METHODS[tx.paymentMethod]?.label || tx.paymentMethod,
+      'Fatura Durumu': tx.isInvoiced ? 'Faturalı' : 'Faturasız',
+      'Tutar (TL)': tx.amount,
+      'KDV Tutarı': tx.vatAmount || 0,
+      'Durum': tx.status === 'cancelled' ? 'İptal' : 'Aktif'
+    });
+
+    const incomeData = incomes.map(mapTx);
+    const expenseData = expenses.map(mapTx);
+
+    const workbook = XLSX.utils.book_new();
+    
+    if (incomeData.length > 0) {
+      const incomeSheet = XLSX.utils.json_to_sheet(incomeData);
+      XLSX.utils.book_append_sheet(workbook, incomeSheet, 'Gelirler');
+    }
+    
+    if (expenseData.length > 0) {
+      const expenseSheet = XLSX.utils.json_to_sheet(expenseData);
+      XLSX.utils.book_append_sheet(workbook, expenseSheet, 'Giderler');
+    }
+    
+    if (incomeData.length === 0 && expenseData.length === 0) {
+       const emptySheet = XLSX.utils.json_to_sheet([{ 'Bilgi': 'Kayıt bulunamadı' }]);
+       XLSX.utils.book_append_sheet(workbook, emptySheet, 'Kasa');
+    }
+
+    XLSX.writeFile(workbook, `Kasa_Raporu_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '_')}.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const incomes = visibleTransactions.filter(tx => tx.type === 'income');
+    const expenses = visibleTransactions.filter(tx => tx.type === 'expense');
+    
+    let yPos = 15;
+    doc.setFontSize(16);
+    doc.text('Kasa Hareketleri Raporu', 14, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(11);
+    doc.text(`Tarih Araligi: ${startDate ? new Date(startDate).toLocaleDateString('tr-TR') : 'Baslangic'} - ${endDate ? new Date(endDate).toLocaleDateString('tr-TR') : 'Bugun'}`, 14, yPos);
+    yPos += 7;
+    doc.text(`Toplam Gelir: ${formatCurrency(visibleSummary.totalIncome)}`, 14, yPos);
+    yPos += 7;
+    doc.text(`Toplam Gider: ${formatCurrency(visibleSummary.totalExpenses)}`, 14, yPos);
+    yPos += 7;
+    doc.text(`Net Durum: ${formatCurrency(visibleSummary.netBalance)}`, 14, yPos);
+    yPos += 10;
+    
+    const head = [['Tarih', 'Kisi', 'Aciklama', 'Odeme Yon.', 'Tutar']];
+
+    if (incomes.length > 0) {
+      doc.setFontSize(14);
+      doc.text('Gelirler', 14, yPos);
+      const incomeTable = incomes.map(tx => [
+        formatDate(tx.createdAt),
+        tx.createdBy || '-',
+        tx.description || '-',
+        PAYMENT_METHODS[tx.paymentMethod]?.label || tx.paymentMethod,
+        formatCurrency(tx.amount)
+      ]);
+      
+      doc.autoTable({
+        head,
+        body: incomeTable,
+        startY: yPos + 5,
+        styles: { font: 'helvetica' },
+        headStyles: { fillColor: [16, 185, 129] } // emerald-500
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+    }
+    
+    if (expenses.length > 0) {
+      if (yPos > 250) { doc.addPage(); yPos = 20; }
+      doc.setFontSize(14);
+      doc.text('Giderler', 14, yPos);
+      const expenseTable = expenses.map(tx => [
+        formatDate(tx.createdAt),
+        tx.createdBy || '-',
+        tx.description || '-',
+        PAYMENT_METHODS[tx.paymentMethod]?.label || tx.paymentMethod,
+        formatCurrency(tx.amount)
+      ]);
+      
+      doc.autoTable({
+        head,
+        body: expenseTable,
+        startY: yPos + 5,
+        styles: { font: 'helvetica' },
+        headStyles: { fillColor: [239, 68, 68] } // red-500
+      });
+    }
+
+    doc.save(`Kasa_Raporu_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '_')}.pdf`);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" /></div>;
   }
@@ -169,9 +305,17 @@ export default function FinancePage() {
           <h1 className="text-2xl font-bold text-gray-900">Kasa Yönetimi</h1>
           <p className="text-gray-500 text-sm mt-1">Gelir ve gider takibi</p>
         </div>
-        <button onClick={openCreate} className="btn btn-primary">
-          <Plus size={16} /> Yeni İşlem
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={handleExportPDF} className="btn btn-secondary bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">
+            <FileText size={16} /> PDF
+          </button>
+          <button onClick={handleExportExcel} className="btn btn-secondary bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">
+            <Download size={16} /> Excel
+          </button>
+          <button onClick={openCreate} className="btn btn-primary">
+            <Plus size={16} /> Yeni İşlem
+          </button>
+        </div>
       </div>
 
       {/* Balance Cards */}
@@ -207,15 +351,35 @@ export default function FinancePage() {
         <div className="flex flex-col gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="font-semibold text-gray-900">Son İşlemler</h2>
-            {personFilter && <p className="text-sm text-gray-500 mt-1">{personFilter} için {visibleTransactions.length} işlem listeleniyor</p>}
+            {(personFilter || typeFilter) && <p className="text-sm text-gray-500 mt-1">Filtrelenmiş {visibleTransactions.length} işlem listeleniyor</p>}
           </div>
-          <div className="w-full sm:w-64">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Ödemeyi Yapan</label>
-            <select className="select" value={personFilter} onChange={e => setPersonFilter(e.target.value)}>
-              <option value="">Tüm kişiler</option>
-              {personOptions.map(person => <option key={person} value={person}>{person}</option>)}
-            </select>
-          </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="w-full sm:w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Başlangıç Tarihi</label>
+                <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              </div>
+              <div className="w-full sm:w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Bitiş Tarihi</label>
+                <input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="w-full sm:w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">İşlem Tipi</label>
+                <select className="select" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+                  <option value="">Tümü</option>
+                  <option value="income">Gelir</option>
+                  <option value="expense">Gider</option>
+                </select>
+              </div>
+              <div className="w-full sm:w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Ödemeyi Yapan</label>
+                <select className="select" value={personFilter} onChange={e => setPersonFilter(e.target.value)}>
+                  <option value="">Tüm kişiler</option>
+                  {personOptions.map(person => <option key={person} value={person}>{person}</option>)}
+                </select>
+              </div>
+            </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">

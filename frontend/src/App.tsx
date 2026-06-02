@@ -21,6 +21,8 @@ import CategoriesPage from './pages/CategoriesPage';
 import TaxCalculatorPage from './pages/TaxCalculatorPage';
 import SettingsPage from './pages/SettingsPage';
 import PayrollPage from './pages/PayrollPage';
+import DebtsPage from './pages/DebtsPage';
+import ReceivablesPage from './pages/ReceivablesPage';
 
 export default function App() {
   return (
@@ -41,8 +43,10 @@ export default function App() {
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />
                   <Route path="/invoices" element={<InvoicesPage />} />
                   <Route path="/sales" element={<SalesPage />} />
+                  <Route path="/sales/receivables" element={<ReceivablesPage />} />
                   <Route path="/customers" element={<CustomersPage />} />
                   <Route path="/checks" element={<ChecksPage />} />
+                  <Route path="/debts" element={<DebtsPage />} />
                   <Route path="/suppliers" element={<SuppliersPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/budget" element={<BudgetPage />} />

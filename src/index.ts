@@ -61,6 +61,8 @@ import { createCategoryRoutes } from '@interfaces/api/routes/category.routes';
 import { createBudgetRoutes } from '@interfaces/api/routes/budget.routes';
 import { createSalesRoutes } from '@interfaces/api/routes/sales.routes';
 import { createPayrollRoutes } from '@interfaces/api/routes/payroll.routes';
+import { createDebtsRoutes } from '@interfaces/api/routes/debts.routes';
+import { createReceivablesRoutes } from '@interfaces/api/routes/receivables.routes';
 import { adminOnly, authMiddleware } from '@interfaces/api/middleware/auth.middleware';
 import { createRequestLogger } from '@interfaces/api/middleware/request-logger.middleware';
 import { AuditService } from '@shared/audit/audit.service';
@@ -187,10 +189,12 @@ async function bootstrap() {
   app.use('/api/customers', auth, adminOnly, createCustomerRoutes(customerRepo));
   app.use('/api/categories', auth, adminOnly, createCategoryRoutes(categoryRepo));
   app.use('/api/budget', auth, adminOnly, createBudgetRoutes(budgetRepo));
-  app.use('/api/payroll', auth, adminOnly, createPayrollRoutes(payrollRepo));
+  app.use('/api/payroll', auth, adminOnly, createPayrollRoutes(payrollRepo, createTransaction));
   app.use('/api/sales', auth, adminOnly, createSalesRoutes(saleRepo, transactionRepo, projectRepo));
   app.use('/api', auth, adminOnly, createProcurementRoutes(supplierRepo, purchaseOrderRepo, materialRepo, stockService));
   app.use('/api', auth, adminOnly, createReportsRoutes(transactionRepo, projectRepo, invoiceRepo, materialRepo));
+  app.use('/api/debts', auth, adminOnly, createDebtsRoutes(knex));
+  app.use('/api/receivables', auth, adminOnly, createReceivablesRoutes(knex));
 
   // Health check (public)
   app.get('/health', (req, res) => {
